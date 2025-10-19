@@ -1,0 +1,39 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "freethreading"
+version = "0.1.0"
+description = "Automatic selection between threading and multiprocessing based on Python's GIL status"
+license = "MIT"
+readme = "README.md"
+authors = [
+    { name = "Iskander Gaba", email = "iskander@hey.com" },
+]
+keywords = [
+    "gil",
+    "threading",
+    "multiprocessing",
+    "concurrency",
+    "parallelism",
+]
+requires-python = ">=3.10"
+
+[project.urls]
+repository = "https://github.com/iskandergaba/freethreading"
+documentation = "https://freethreading.readthedocs.io"
+
+[dependency-groups]
+dev = [
+    "ruff~=0.14.0",
+    "pytest~=8.4.0",
+    "pytest-cov~=7.0.0",
+]
+docs = []
+
+[tool.uv]
+default-groups = "all"
+
+[tool.ruff.lint]
+extend-select = ["E501"]
