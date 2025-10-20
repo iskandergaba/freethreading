@@ -64,6 +64,34 @@ def test_backend_consistency(backend):
         assert backend.get_backend() == "threading"
 
 
+def test_cpu_count(backend):
+    count = backend.cpu_count()
+    assert isinstance(count, int)
+    assert count > 0
+
+
+def test_get_ident(backend):
+    ident = backend.get_ident()
+    assert isinstance(ident, int)
+    assert ident > 0
+
+
+def test_current_worker(backend):
+    worker = backend.current_worker()
+    assert worker is not None
+
+
+def test_active_count(backend):
+    count = backend.active_count()
+    assert isinstance(count, int)
+    assert count >= 0
+
+
+def test_enumerate(backend):
+    workers = backend.enumerate()
+    assert isinstance(workers, list)
+
+
 def test_worker_creation(backend):
     worker = backend.Worker(target=simple_task)
     assert worker is not None
@@ -163,27 +191,21 @@ def test_rlock(backend):
     lock.release()
 
 
+def test_rlock_acquire_release(backend):
+    """Test RLock basic acquire/release."""
+    lock = backend.RLock()
+    assert lock.acquire()
+    assert lock.acquire()
+    lock.release()
+    lock.release()
+
+
 def test_rlock_context_manager(backend):
     lock = backend.RLock()
 
     with lock:
         with lock:
             pass
-
-
-def test_rlock_acquire_release(backend):
-    """Test RLock basic acquire/release."""
-    lock = backend.RLock()
-
-    # Can acquire
-    assert lock.acquire()
-
-    # Can acquire again (reentrant)
-    assert lock.acquire()
-
-    # Must release twice
-    lock.release()
-    lock.release()
 
 
 def test_semaphore(backend):
@@ -249,23 +271,28 @@ def test_event(backend):
 
 def test_condition(backend):
     cond = backend.Condition()
-    cond.acquire()
+    acquired = cond.acquire()
+    assert acquired is True
     cond.release()
 
 
 def test_condition_context_manager(backend):
     cond = backend.Condition()
     with cond:
-        pass
+        assert cond is not None
 
 
 def test_condition_context_manager_exception(backend):
     cond = backend.Condition()
+    exception_raised = False
     try:
         with cond:
             raise ValueError("test")
     except ValueError:
-        pass
+        exception_raised = True
+    assert exception_raised
+    assert cond.acquire()
+    cond.release()
 
 
 def test_condition_wait_for(backend):
@@ -288,6 +315,17 @@ def test_condition_notify(backend):
     with cond:
         cond.notify(1)
         cond.notify_all()
+
+
+def test_condition_notify_with_count(backend):
+    """Test Condition.notify(n) with different count values."""
+    cond = backend.Condition()
+    assert cond.acquire()
+    cond.notify(0)
+    cond.notify(10)
+    cond.release()
+    assert cond.acquire()
+    cond.release()
 
 
 def test_barrier(backend):
@@ -336,6 +374,16 @@ def test_queue_nowait_methods(backend):
         pass
 
 
+def test_queue_qsize(backend):
+    """Test Queue.qsize() method."""
+    q = backend.Queue()
+    assert q.qsize() == 0
+    q.put(1)
+    assert q.qsize() == 1
+    q.get()
+    assert q.qsize() == 0
+
+
 def test_queue_empty_full(backend):
     import time
 
@@ -370,6 +418,16 @@ def test_simple_queue(backend):
     q.put(42)
     result = q.get()
     assert result == 42
+
+
+def test_simple_queue_empty(backend):
+    """Test SimpleQueue.empty() method."""
+    q = backend.SimpleQueue()
+    assert q.empty()
+    q.put(1)
+    assert not q.empty()
+    q.get()
+    assert q.empty()
 
 
 def test_simple_queue_blocking_warnings(backend):
@@ -418,31 +476,3 @@ def test_pool_executor_submit(backend):
         result = future.result()
 
     assert result == 25
-
-
-def test_cpu_count(backend):
-    count = backend.cpu_count()
-    assert isinstance(count, int)
-    assert count > 0
-
-
-def test_get_ident(backend):
-    ident = backend.get_ident()
-    assert isinstance(ident, int)
-    assert ident > 0
-
-
-def test_current_worker(backend):
-    worker = backend.current_worker()
-    assert worker is not None
-
-
-def test_active_count(backend):
-    count = backend.active_count()
-    assert isinstance(count, int)
-    assert count >= 0
-
-
-def test_enumerate(backend):
-    workers = backend.enumerate()
-    assert isinstance(workers, list)
