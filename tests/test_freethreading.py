@@ -103,12 +103,28 @@ def test_worker_with_args(backend):
     worker = backend.Worker(target=task_with_args, args=(1, 2))
     worker.start()
     worker.join()
+    if backend.get_backend() == "threading":
+        import threading
+
+        assert isinstance(worker, threading.Thread)
+    else:
+        import multiprocessing
+
+        assert isinstance(worker, multiprocessing.Process)
 
 
 def test_worker_with_kwargs(backend):
     worker = backend.Worker(target=task_with_kwargs, kwargs={"x": 5, "y": 15})
     worker.start()
     worker.join()
+    if backend.get_backend() == "threading":
+        import threading
+
+        assert isinstance(worker, threading.Thread)
+    else:
+        import multiprocessing
+
+        assert isinstance(worker, multiprocessing.Process)
 
 
 def test_worker_with_name(backend):
@@ -146,7 +162,7 @@ def test_worker_local_function_warning(backend):
 
 def test_lock(backend):
     lock = backend.Lock()
-    lock.acquire()
+    assert lock.acquire()
     lock.release()
 
 
@@ -185,8 +201,8 @@ def test_lock_acquire_timeout(backend):
 
 def test_rlock(backend):
     lock = backend.RLock()
-    lock.acquire()
-    lock.acquire()
+    assert lock.acquire()
+    assert lock.acquire()
     lock.release()
     lock.release()
 
@@ -202,22 +218,21 @@ def test_rlock_acquire_release(backend):
 
 def test_rlock_context_manager(backend):
     lock = backend.RLock()
-
     with lock:
         with lock:
-            pass
+            assert lock is not None
 
 
 def test_semaphore(backend):
     sem = backend.Semaphore(2)
-    sem.acquire()
+    assert sem.acquire()
     sem.release()
 
 
 def test_semaphore_context_manager(backend):
     sem = backend.Semaphore(1)
     with sem:
-        pass
+        assert sem is not None
 
 
 def test_semaphore_context_manager_exception(backend):
@@ -244,7 +259,7 @@ def test_semaphore_timeout(backend):
 
 def test_bounded_semaphore(backend):
     sem = backend.BoundedSemaphore(2)
-    sem.acquire()
+    assert sem.acquire()
     sem.release()
 
 
@@ -311,10 +326,10 @@ def test_condition_wait_for(backend):
 
 def test_condition_notify(backend):
     cond = backend.Condition()
-
     with cond:
         cond.notify(1)
         cond.notify_all()
+    assert cond is not None
 
 
 def test_condition_notify_with_count(backend):
@@ -330,7 +345,8 @@ def test_condition_notify_with_count(backend):
 
 def test_barrier(backend):
     barrier = backend.Barrier(1)
-    barrier.wait()
+    result = barrier.wait()
+    assert result == 0
 
 
 def test_queue(backend):
