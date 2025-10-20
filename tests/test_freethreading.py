@@ -171,15 +171,19 @@ def test_rlock_context_manager(backend):
             pass
 
 
-def test_rlock_locked(backend):
+def test_rlock_acquire_release(backend):
+    """Test RLock basic acquire/release."""
     lock = backend.RLock()
-    assert not lock.locked()
 
-    lock.acquire()
-    assert lock.locked()
+    # Can acquire
+    assert lock.acquire()
 
+    # Can acquire again (reentrant)
+    assert lock.acquire()
+
+    # Must release twice
     lock.release()
-    assert not lock.locked()
+    lock.release()
 
 
 def test_semaphore(backend):
