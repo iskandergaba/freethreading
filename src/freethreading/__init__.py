@@ -134,7 +134,14 @@ class Lock:
         self._lock.release()
 
     def locked(self):
-        return self._lock.locked()
+        if hasattr(self._lock, "locked"):
+            return self._lock.locked()
+
+        # Fallback for Python < 3.14
+        if self.acquire(blocking=False):
+            self.release()
+            return False
+        return True
 
     def __enter__(self):
         return self._lock.__enter__()
@@ -194,7 +201,14 @@ class RLock:
         self._lock.release()
 
     def locked(self):
-        return self._lock.locked()
+        if hasattr(self._lock, "locked"):
+            return self._lock.locked()
+
+        # Fallback for Python < 3.14
+        if self.acquire(blocking=False):
+            self.release()
+            return False
+        return True
 
     def __enter__(self):
         return self._lock.__enter__()
