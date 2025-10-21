@@ -72,7 +72,6 @@ Utility Functions
    :toctree: generated
    :nosignatures:
 
-   is_gil_enabled
    get_backend
    current_worker
    get_ident

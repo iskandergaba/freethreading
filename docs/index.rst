@@ -38,7 +38,6 @@ Quick Start
 
    # Check which backend is being used
    print(freethreading.get_backend())  # 'threading' or 'multiprocessing'
-   print(freethreading.is_gil_enabled())  # True or False
 
    # Use unified API - automatically selects best backend
    from freethreading import Worker, Lock, Queue

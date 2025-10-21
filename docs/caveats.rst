@@ -151,7 +151,6 @@ When debugging, check which backend is active:
    import freethreading
 
    print(f"Backend: {freethreading.get_backend()}")
-   print(f"GIL enabled: {freethreading.is_gil_enabled()}")
 
 Force a specific backend for testing:
 

@@ -20,14 +20,13 @@ You can determine which backend is active:
 
    import freethreading
 
-   # Check if GIL is enabled
-   if freethreading.is_gil_enabled():
+   # Get backend name directly
+   backend = freethreading.get_backend()  # 'threading' or 'multiprocessing'
+
+   if backend == 'multiprocessing':
        print("GIL is enabled - using multiprocessing")
    else:
        print("GIL is disabled - using threading")
-
-   # Get backend name directly
-   backend = freethreading.get_backend()  # 'threading' or 'multiprocessing'
 
 
 Workers (Threads/Processes)

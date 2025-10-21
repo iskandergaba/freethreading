@@ -15,8 +15,6 @@ Basic usage with automatic backend selection:
 >>> import freethreading
 >>> freethreading.get_backend()  # doctest: +SKIP
 'multiprocessing'  # or 'threading' depending on Python build
->>> freethreading.is_gil_enabled()  # doctest: +SKIP
-True  # or False depending on Python build
 
 Create workers that adapt to the backend:
 
@@ -50,33 +48,7 @@ import sys
 import warnings
 from typing import Literal
 
-
-def is_gil_enabled() -> bool:
-    """
-    Check if the Global Interpreter Lock (GIL) is enabled.
-
-    Returns
-    -------
-    bool
-        True if GIL is enabled (standard Python), False if disabled (free-threaded).
-
-    Notes
-    -----
-    This function checks for the presence of :func:`sys._is_gil_enabled` which
-    exists in Python 3.13+ builds with free-threading support.
-
-    Examples
-    --------
-    >>> import freethreading
-    >>> if freethreading.is_gil_enabled():  # doctest: +SKIP
-    ...     print("Using multiprocessing backend")
-    ... else:
-    ...     print("Using threading backend")
-    """
-    return sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True
-
-
-if is_gil_enabled():
+if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from concurrent.futures import ProcessPoolExecutor as _PoolExecutor
     from multiprocessing import Barrier as _Barrier
     from multiprocessing import BoundedSemaphore as _BoundedSemaphore
@@ -1319,5 +1291,4 @@ __all__ = [
     "enumerate",
     "get_backend",
     "get_ident",
-    "is_gil_enabled",
 ]

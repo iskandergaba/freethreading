@@ -49,21 +49,9 @@ def backend(request, monkeypatch):
     importlib.reload(freethreading)
 
 
-def test_is_gil_enabled(backend):
-    result = backend.is_gil_enabled()
-    assert isinstance(result, bool)
-
-
 def test_get_backend(backend):
     result = backend.get_backend()
     assert result in ["threading", "multiprocessing"]
-
-
-def test_backend_consistency(backend):
-    if backend.is_gil_enabled():
-        assert backend.get_backend() == "multiprocessing"
-    else:
-        assert backend.get_backend() == "threading"
 
 
 def test_get_ident(backend):
