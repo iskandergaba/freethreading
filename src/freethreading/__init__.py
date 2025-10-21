@@ -76,29 +76,6 @@ def is_gil_enabled() -> bool:
     return sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True
 
 
-def get_backend() -> Literal["threading", "multiprocessing"]:
-    """
-    Get the name of the active concurrency backend.
-
-    Returns
-    -------
-    Literal['threading', 'multiprocessing']
-        'threading' when GIL is disabled, 'multiprocessing' when GIL is enabled.
-
-    See Also
-    --------
-    is_gil_enabled : Check if GIL is enabled
-
-    Examples
-    --------
-    >>> import freethreading
-    >>> backend = freethreading.get_backend()  # doctest: +SKIP
-    >>> print(f"Using {backend} backend")  # doctest: +SKIP
-    Using multiprocessing backend
-    """
-    return _backend
-
-
 if is_gil_enabled():
     from concurrent.futures import ProcessPoolExecutor as _PoolExecutor
     from multiprocessing import Barrier as _Barrier
@@ -111,30 +88,9 @@ if is_gil_enabled():
     from multiprocessing import RLock as _RLock
     from multiprocessing import Semaphore as _Semaphore
     from multiprocessing import SimpleQueue as _SimpleQueue
-    from multiprocessing import active_children as enumerate
-    from multiprocessing import current_process as current_worker
+    from multiprocessing import active_children as _enumerate
+    from multiprocessing import current_process as _current_worker
     from os import getpid as get_ident
-
-    def active_count():
-        """
-        Return the number of currently active :class:`Worker` objects.
-
-        Returns
-        -------
-        int
-            The number of :class:`Worker` objects currently alive.
-
-        See Also
-        --------
-        enumerate : Return a list of all active :class:`Worker` objects
-        current_worker : Get the current :class:`Worker` object
-
-        Notes
-        -----
-        This counts all :class:`Worker` objects (threads or processes) that have
-        been started but not yet finished.
-        """
-        return len(enumerate())
 
     _backend = "multiprocessing"
 else:
@@ -153,120 +109,6 @@ else:
     from threading import current_thread as _current_worker
     from threading import enumerate as _enumerate
     from threading import get_ident as _get_ident
-
-    def current_worker():
-        """
-        Return the current :class:`Worker` object.
-
-        Returns
-        -------
-        Worker
-            The :class:`Worker` object corresponding to the caller's thread or process.
-
-        See Also
-        --------
-        get_ident : Get the identifier of the current worker
-        active_count : Get the number of active workers
-
-        Examples
-        --------
-        >>> from freethreading import current_worker
-        >>> worker = current_worker()
-        >>> print(worker.name)  # doctest: +SKIP
-        MainThread
-        """
-        return _current_worker()
-
-    def enumerate():
-        """
-        Return a list of all active :class:`Worker` objects.
-
-        Returns
-        -------
-        list of Worker
-            List of all :class:`Worker` objects currently alive.
-
-        See Also
-        --------
-        active_count : Get the count of active workers
-        current_worker : Get the current worker
-
-        Notes
-        -----
-        The list includes the main thread/process and all :class:`Worker` objects that
-        have been started but not yet finished.
-
-        Examples
-        --------
-        >>> from freethreading import enumerate, Worker
-        >>> def task():
-        ...     pass
-        >>> w = Worker(target=task)
-        >>> w.start()
-        >>> workers = enumerate()
-        >>> len(workers) >= 2  # At least main + our worker  # doctest: +SKIP
-        True
-        """
-        return _enumerate()
-
-    def get_ident():
-        """
-        Return the identifier of the current worker.
-
-        Returns
-        -------
-        int
-            Thread identifier or process ID of the current :class:`Worker`.
-
-        See Also
-        --------
-        current_worker : Get the current Worker object
-
-        Notes
-        -----
-        - When using threading backend: Returns thread identifier
-        - When using multiprocessing backend: Returns process ID (PID)
-
-        Examples
-        --------
-        >>> from freethreading import get_ident
-        >>> ident = get_ident()
-        >>> isinstance(ident, int)
-        True
-        """
-        return _get_ident()
-
-    def active_count():
-        """
-        Return the number of currently active :class:`Worker` objects.
-
-        Returns
-        -------
-        int
-            Number of :class:`Worker` objects currently running.
-
-        See Also
-        --------
-        enumerate : Return a list of all active :class:`Worker` objects
-        current_worker : Get the current :class:`Worker` object
-
-        Notes
-        -----
-        This counts all :class:`Worker` objects (threads or processes) that have
-        been started but not yet finished.
-
-        Examples
-        --------
-        >>> from freethreading import active_count, Worker
-        >>> def task():
-        ...     pass
-        >>> initial = active_count()
-        >>> w = Worker(target=task)
-        >>> w.start()
-        >>> active_count() >= initial + 1  # doctest: +SKIP
-        True
-        """
-        return _active_count()
 
     _backend = "threading"
 
@@ -1317,6 +1159,147 @@ class Worker:
     def daemon(self, value):
         """Set the daemon status."""
         self._worker.daemon = value
+
+
+def active_count():
+    """
+    Return the number of currently active :class:`Worker` objects.
+
+    Returns
+    -------
+    int
+        Number of :class:`Worker` objects currently running.
+
+    See Also
+    --------
+    enumerate : Return a list of all active :class:`Worker` objects
+    current_worker : Get the current :class:`Worker` object
+
+    Notes
+    -----
+    This counts all :class:`Worker` objects (threads or processes) that have
+    been started but not yet finished.
+
+    Examples
+    --------
+    >>> from freethreading import active_count, Worker
+    >>> def task():
+    ...     pass
+    >>> initial = active_count()
+    >>> w = Worker(target=task)
+    >>> w.start()
+    >>> active_count() >= initial + 1  # doctest: +SKIP
+    True
+    """
+    return _active_count() if _backend == "threading" else len(enumerate())
+
+
+def current_worker():
+    """
+    Return the current :class:`Worker` object.
+
+    Returns
+    -------
+    Worker
+        The :class:`Worker` object corresponding to the caller's thread or process.
+
+    See Also
+    --------
+    get_ident : Get the identifier of the current worker
+    active_count : Get the number of active workers
+
+    Examples
+    --------
+    >>> from freethreading import current_worker
+    >>> worker = current_worker()
+    >>> print(worker.name)  # doctest: +SKIP
+    MainThread
+    """
+    return _current_worker()
+
+
+def enumerate():
+    """
+    Return a list of all active :class:`Worker` objects.
+
+    Returns
+    -------
+    list of Worker
+        List of all :class:`Worker` objects currently alive.
+
+    See Also
+    --------
+    active_count : Get the count of active workers
+    current_worker : Get the current worker
+
+    Notes
+    -----
+    The list includes the main thread/process and all :class:`Worker` objects that
+    have been started but not yet finished.
+
+    Examples
+    --------
+    >>> from freethreading import enumerate, Worker
+    >>> def task():
+    ...     pass
+    >>> w = Worker(target=task)
+    >>> w.start()
+    >>> workers = enumerate()
+    >>> len(workers) >= 2  # At least main + our worker  # doctest: +SKIP
+    True
+    """
+    return _enumerate()
+
+
+def get_backend() -> Literal["threading", "multiprocessing"]:
+    """
+    Get the name of the active concurrency backend.
+
+    Returns
+    -------
+    Literal['threading', 'multiprocessing']
+        'threading' when GIL is disabled, 'multiprocessing' when GIL is enabled.
+
+    See Also
+    --------
+    is_gil_enabled : Check if GIL is enabled
+
+    Examples
+    --------
+    >>> import freethreading
+    >>> backend = freethreading.get_backend()  # doctest: +SKIP
+    >>> print(f"Using {backend} backend")  # doctest: +SKIP
+    Using multiprocessing backend
+    """
+    return _backend
+
+
+def get_ident():
+    """
+    Return the identifier of the current worker.
+
+    Returns
+    -------
+    int
+        Thread identifier or process ID of the current :class:`Worker`.
+
+    See Also
+    --------
+    current_worker : Get the current Worker object
+
+    Notes
+    -----
+    - When using threading backend: Returns thread identifier
+    - When using multiprocessing backend: Returns process ID (PID)
+
+    Examples
+    --------
+    >>> from freethreading import get_ident
+    >>> ident = get_ident()
+    >>> isinstance(ident, int)
+    True
+    """
+    return _get_ident()
 
 
 __all__ = [
