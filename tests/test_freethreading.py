@@ -106,11 +106,11 @@ def test_worker_with_args(backend):
     if backend.get_backend() == "threading":
         import threading
 
-        assert isinstance(worker, threading.Thread)
+        assert isinstance(worker._worker, threading.Thread)
     else:
         import multiprocessing
 
-        assert isinstance(worker, multiprocessing.Process)
+        assert isinstance(worker._worker, multiprocessing.Process)
 
 
 def test_worker_with_kwargs(backend):
@@ -120,11 +120,11 @@ def test_worker_with_kwargs(backend):
     if backend.get_backend() == "threading":
         import threading
 
-        assert isinstance(worker, threading.Thread)
+        assert isinstance(worker._worker, threading.Thread)
     else:
         import multiprocessing
 
-        assert isinstance(worker, multiprocessing.Process)
+        assert isinstance(worker._worker, multiprocessing.Process)
 
 
 def test_worker_with_name(backend):

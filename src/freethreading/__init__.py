@@ -112,9 +112,7 @@ if is_gil_enabled():
     from multiprocessing import Semaphore as _Semaphore
     from multiprocessing import SimpleQueue as _SimpleQueue
     from multiprocessing import active_children as enumerate
-    from multiprocessing import (
-        cpu_count,
-    )
+    from multiprocessing import cpu_count
     from multiprocessing import current_process as current_worker
     from os import getpid as get_ident
 
@@ -153,16 +151,10 @@ else:
     from threading import RLock as _RLock
     from threading import Semaphore as _Semaphore
     from threading import Thread as _Worker
-    from threading import (
-        active_count as _active_count,
-    )
+    from threading import active_count as _active_count
     from threading import current_thread as _current_worker
-    from threading import (
-        enumerate as _enumerate,
-    )
-    from threading import (
-        get_ident as _get_ident,
-    )
+    from threading import enumerate as _enumerate
+    from threading import get_ident as _get_ident
 
     def cpu_count():
         """
@@ -300,6 +292,108 @@ else:
         return _active_count()
 
     _backend = "threading"
+
+
+class Barrier:
+    """
+    Synchronization barrier for coordinating :class:`Worker` objects.
+
+    A barrier is used to wait for a fixed number of workers to reach a
+    common point. Uses :class:`threading.Barrier` or
+    :class:`multiprocessing.Barrier` depending on backend.
+
+    Parameters
+    ----------
+    parties : int
+        Number of workers required to pass the barrier.
+    action : callable, optional
+        Function called by one worker when the barrier is passed.
+    timeout : float, optional
+        Default timeout for :meth:`wait` calls.
+
+    See Also
+    --------
+    Event : Event signaling between workers
+    threading.Barrier : Threading implementation
+    multiprocessing.Barrier : Multiprocessing implementation
+
+    Examples
+    --------
+    >>> from freethreading import Barrier, Worker
+    >>> barrier = Barrier(3)  # Wait for 3 workers
+    >>> def synchronized_task(i):
+    ...     print(f"Worker {i} reached barrier")
+    ...     barrier.wait()
+    ...     print(f"Worker {i} past barrier")
+    >>> workers = [Worker(target=synchronized_task, args=(i,)) for i in range(3)]
+    >>> for w in workers:  # doctest: +SKIP
+    ...     w.start()
+    >>> for w in workers:  # doctest: +SKIP
+    ...     w.join()
+    """
+
+    def __init__(self, parties, action=None, timeout=None):
+        self._barrier = _Barrier(parties, action, timeout)
+
+    def wait(self, timeout=None):
+        """
+        Wait until all parties have reached the barrier.
+
+        Parameters
+        ----------
+        timeout : float, optional
+            Maximum time to wait in seconds.
+
+        Returns
+        -------
+        int
+            The arrival index (0 to parties-1).
+        """
+        return self._barrier.wait(timeout)
+
+    def reset(self):
+        """Reset the barrier to its initial empty state."""
+        self._barrier.reset()
+
+    def abort(self):
+        """Put the barrier into a broken state."""
+        self._barrier.abort()
+
+    @property
+    def parties(self):
+        """
+        The number of workers required to pass the barrier.
+
+        Returns
+        -------
+        int
+            Number of parties.
+        """
+        return self._barrier.parties
+
+    @property
+    def n_waiting(self):
+        """
+        The number of workers currently waiting at the barrier.
+
+        Returns
+        -------
+        int
+            Number of waiting workers.
+        """
+        return self._barrier.n_waiting
+
+    @property
+    def broken(self):
+        """
+        True if the barrier is in a broken state.
+
+        Returns
+        -------
+        bool
+            True if broken, False otherwise.
+        """
+        return self._barrier.broken
 
 
 class BoundedSemaphore:
@@ -486,6 +580,79 @@ class Condition:
         return self._condition.__exit__(exc_type, exc_val, exc_tb)
 
 
+class Event:
+    """
+    Synchronization primitive for signaling between :class:`Worker` objects.
+
+    An event manages an internal flag that can be set or cleared. Workers can
+    wait for the flag to be set. Uses :class:`threading.Event` or
+    :class:`multiprocessing.Event` depending on backend.
+
+    See Also
+    --------
+    Barrier : Synchronization barrier for coordinating workers
+    threading.Event : Threading implementation
+    multiprocessing.Event : Multiprocessing implementation
+
+    Examples
+    --------
+    >>> from freethreading import Event, Worker
+    >>> event = Event()
+    >>> def waiter():
+    ...     event.wait()
+    ...     print("Event set!")
+    >>> def setter():
+    ...     import time
+    ...     time.sleep(0.1)
+    ...     event.set()
+    >>> w1 = Worker(target=waiter)
+    >>> w2 = Worker(target=setter)
+    >>> w1.start()
+    >>> w2.start()
+    >>> w1.join()  # doctest: +SKIP
+    >>> w2.join()  # doctest: +SKIP
+    Event set!
+    """
+
+    def __init__(self):
+        self._event = _Event()
+
+    def is_set(self):
+        """
+        Return True if the internal flag is set.
+
+        Returns
+        -------
+        bool
+            True if set, False otherwise.
+        """
+        return self._event.is_set()
+
+    def set(self):
+        """Set the internal flag, waking up all waiting workers."""
+        self._event.set()
+
+    def clear(self):
+        """Reset the internal flag to false."""
+        self._event.clear()
+
+    def wait(self, timeout=None):
+        """
+        Block until the internal flag is true.
+
+        Parameters
+        ----------
+        timeout : float, optional
+            Maximum time to wait in seconds.
+
+        Returns
+        -------
+        bool
+            True if flag is set, False if timeout occurred.
+        """
+        return self._event.wait(timeout)
+
+
 class Lock:
     """
     Unified Lock interface.
@@ -560,6 +727,105 @@ class Lock:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the runtime context (release the lock)."""
         return self._lock.__exit__(exc_type, exc_val, exc_tb)
+
+
+class PoolExecutor:
+    """
+    Executor that manages a pool of :class:`Worker` objects.
+
+    Provides a high-level interface for asynchronously executing callables using
+    a pool of workers. Uses :class:`concurrent.futures.ThreadPoolExecutor` or
+    :class:`concurrent.futures.ProcessPoolExecutor` depending on backend.
+
+    Parameters
+    ----------
+    max_workers : int, optional
+        Maximum number of workers in the pool.
+    **kwargs
+        Additional arguments passed to the underlying executor.
+
+    See Also
+    --------
+    Worker : Lower-level worker interface
+    concurrent.futures.ThreadPoolExecutor : Threading implementation
+    concurrent.futures.ProcessPoolExecutor : Multiprocessing implementation
+
+    Examples
+    --------
+    >>> from freethreading import PoolExecutor
+    >>> def square(x):
+    ...     return x * x
+    >>> with PoolExecutor(max_workers=4) as executor:
+    ...     results = list(executor.map(square, range(10)))
+    >>> results
+    [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+    """
+
+    def __init__(self, max_workers=None, **kwargs):
+        self._executor = _PoolExecutor(max_workers=max_workers, **kwargs)
+
+    def submit(self, fn, *args, **kwargs):
+        """
+        Submit a callable to be executed.
+
+        Parameters
+        ----------
+        fn : callable
+            The callable to execute.
+        *args
+            Positional arguments for fn.
+        **kwargs
+            Keyword arguments for fn.
+
+        Returns
+        -------
+        Future
+            A Future representing the execution.
+        """
+        return self._executor.submit(fn, *args, **kwargs)
+
+    def map(self, fn, *iterables, timeout=None, chunksize=1):
+        """
+        Map a function over iterables.
+
+        Parameters
+        ----------
+        fn : callable
+            Function to apply.
+        *iterables
+            Iterables to map over.
+        timeout : float, optional
+            Maximum time to wait for results.
+        chunksize : int, default=1
+            Size of chunks for multiprocessing.
+
+        Returns
+        -------
+        iterator
+            Iterator over results.
+        """
+        return self._executor.map(fn, *iterables, timeout=timeout, chunksize=chunksize)
+
+    def shutdown(self, wait=True, cancel_futures=False):
+        """
+        Shutdown the executor.
+
+        Parameters
+        ----------
+        wait : bool, default=True
+            If True, wait for pending futures to complete.
+        cancel_futures : bool, default=False
+            If True, cancel pending futures.
+        """
+        return self._executor.shutdown(wait=wait, cancel_futures=cancel_futures)
+
+    def __enter__(self):
+        """Enter the runtime context."""
+        return self._executor.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the runtime context (shutdown the executor)."""
+        return self._executor.__exit__(exc_type, exc_val, exc_tb)
 
 
 class Queue:
@@ -938,7 +1204,7 @@ class SimpleQueue:
         return self._queue.empty()
 
 
-class Worker(_Worker):
+class Worker:
     """
     Unified Worker interface (Thread or Process).
 
@@ -1006,7 +1272,7 @@ class Worker(_Worker):
                 stacklevel=2,
             )
 
-        super().__init__(
+        self._worker = _Worker(
             group=group,
             target=target,
             name=name,
@@ -1015,279 +1281,65 @@ class Worker(_Worker):
             daemon=daemon,
         )
 
+    def start(self):
+        """Start the worker's activity."""
+        self._worker.start()
 
-class Event:
-    """
-    Synchronization primitive for signaling between :class:`Worker` objects.
-
-    An event manages an internal flag that can be set or cleared. Workers can
-    wait for the flag to be set. Uses :class:`threading.Event` or
-    :class:`multiprocessing.Event` depending on backend.
-
-    See Also
-    --------
-    Barrier : Synchronization barrier for coordinating workers
-    threading.Event : Threading implementation
-    multiprocessing.Event : Multiprocessing implementation
-
-    Examples
-    --------
-    >>> from freethreading import Event, Worker
-    >>> event = Event()
-    >>> def waiter():
-    ...     event.wait()
-    ...     print("Event set!")
-    >>> def setter():
-    ...     import time
-    ...     time.sleep(0.1)
-    ...     event.set()
-    >>> w1 = Worker(target=waiter)
-    >>> w2 = Worker(target=setter)
-    >>> w1.start()
-    >>> w2.start()
-    >>> w1.join()  # doctest: +SKIP
-    >>> w2.join()  # doctest: +SKIP
-    Event set!
-    """
-
-    def __init__(self):
-        self._event = _Event()
-
-    def is_set(self):
+    def join(self, timeout=None):
         """
-        Return True if the internal flag is set.
-
-        Returns
-        -------
-        bool
-            True if set, False otherwise.
-        """
-        return self._event.is_set()
-
-    def set(self):
-        """Set the internal flag, waking up all waiting workers."""
-        self._event.set()
-
-    def clear(self):
-        """Reset the internal flag to false."""
-        self._event.clear()
-
-    def wait(self, timeout=None):
-        """
-        Block until the internal flag is true.
+        Wait for the worker to terminate.
 
         Parameters
         ----------
         timeout : float, optional
             Maximum time to wait in seconds.
+        """
+        self._worker.join(timeout)
+
+    def is_alive(self):
+        """
+        Return whether the worker is alive.
 
         Returns
         -------
         bool
-            True if flag is set, False if timeout occurred.
+            True if the worker is still running.
         """
-        return self._event.wait(timeout)
+        return self._worker.is_alive()
 
-
-class Barrier:
-    """
-    Synchronization barrier for coordinating :class:`Worker` objects.
-
-    A barrier is used to wait for a fixed number of workers to reach a
-    common point. Uses :class:`threading.Barrier` or
-    :class:`multiprocessing.Barrier` depending on backend.
-
-    Parameters
-    ----------
-    parties : int
-        Number of workers required to pass the barrier.
-    action : callable, optional
-        Function called by one worker when the barrier is passed.
-    timeout : float, optional
-        Default timeout for :meth:`wait` calls.
-
-    See Also
-    --------
-    Event : Event signaling between workers
-    threading.Barrier : Threading implementation
-    multiprocessing.Barrier : Multiprocessing implementation
-
-    Examples
-    --------
-    >>> from freethreading import Barrier, Worker
-    >>> barrier = Barrier(3)  # Wait for 3 workers
-    >>> def synchronized_task(i):
-    ...     print(f"Worker {i} reached barrier")
-    ...     barrier.wait()
-    ...     print(f"Worker {i} past barrier")
-    >>> workers = [Worker(target=synchronized_task, args=(i,)) for i in range(3)]
-    >>> for w in workers:  # doctest: +SKIP
-    ...     w.start()
-    >>> for w in workers:  # doctest: +SKIP
-    ...     w.join()
-    """
-
-    def __init__(self, parties, action=None, timeout=None):
-        self._barrier = _Barrier(parties, action, timeout)
-
-    def wait(self, timeout=None):
+    @property
+    def name(self):
         """
-        Wait until all parties have reached the barrier.
-
-        Parameters
-        ----------
-        timeout : float, optional
-            Maximum time to wait in seconds.
+        Worker name.
 
         Returns
         -------
-        int
-            The arrival index (0 to parties-1).
+        str
+            The worker's name.
         """
-        return self._barrier.wait(timeout)
+        return self._worker.name
 
-    def reset(self):
-        """Reset the barrier to its initial empty state."""
-        self._barrier.reset()
-
-    def abort(self):
-        """Put the barrier into a broken state."""
-        self._barrier.abort()
+    @name.setter
+    def name(self, value):
+        """Set the worker name."""
+        self._worker.name = value
 
     @property
-    def parties(self):
+    def daemon(self):
         """
-        The number of workers required to pass the barrier.
-
-        Returns
-        -------
-        int
-            Number of parties.
-        """
-        return self._barrier.parties
-
-    @property
-    def n_waiting(self):
-        """
-        The number of workers currently waiting at the barrier.
-
-        Returns
-        -------
-        int
-            Number of waiting workers.
-        """
-        return self._barrier.n_waiting
-
-    @property
-    def broken(self):
-        """
-        True if the barrier is in a broken state.
+        Daemon status.
 
         Returns
         -------
         bool
-            True if broken, False otherwise.
+            True if the worker is a daemon.
         """
-        return self._barrier.broken
+        return self._worker.daemon
 
-
-class PoolExecutor:
-    """
-    Executor that manages a pool of :class:`Worker` objects.
-
-    Provides a high-level interface for asynchronously executing callables using
-    a pool of workers. Uses :class:`concurrent.futures.ThreadPoolExecutor` or
-    :class:`concurrent.futures.ProcessPoolExecutor` depending on backend.
-
-    Parameters
-    ----------
-    max_workers : int, optional
-        Maximum number of workers in the pool.
-    **kwargs
-        Additional arguments passed to the underlying executor.
-
-    See Also
-    --------
-    Worker : Lower-level worker interface
-    concurrent.futures.ThreadPoolExecutor : Threading implementation
-    concurrent.futures.ProcessPoolExecutor : Multiprocessing implementation
-
-    Examples
-    --------
-    >>> from freethreading import PoolExecutor
-    >>> def square(x):
-    ...     return x * x
-    >>> with PoolExecutor(max_workers=4) as executor:
-    ...     results = list(executor.map(square, range(10)))
-    >>> results
-    [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
-    """
-
-    def __init__(self, max_workers=None, **kwargs):
-        self._executor = _PoolExecutor(max_workers=max_workers, **kwargs)
-
-    def submit(self, fn, *args, **kwargs):
-        """
-        Submit a callable to be executed.
-
-        Parameters
-        ----------
-        fn : callable
-            The callable to execute.
-        *args
-            Positional arguments for fn.
-        **kwargs
-            Keyword arguments for fn.
-
-        Returns
-        -------
-        Future
-            A Future representing the execution.
-        """
-        return self._executor.submit(fn, *args, **kwargs)
-
-    def map(self, fn, *iterables, timeout=None, chunksize=1):
-        """
-        Map a function over iterables.
-
-        Parameters
-        ----------
-        fn : callable
-            Function to apply.
-        *iterables
-            Iterables to map over.
-        timeout : float, optional
-            Maximum time to wait for results.
-        chunksize : int, default=1
-            Size of chunks for multiprocessing.
-
-        Returns
-        -------
-        iterator
-            Iterator over results.
-        """
-        return self._executor.map(fn, *iterables, timeout=timeout, chunksize=chunksize)
-
-    def shutdown(self, wait=True, cancel_futures=False):
-        """
-        Shutdown the executor.
-
-        Parameters
-        ----------
-        wait : bool, default=True
-            If True, wait for pending futures to complete.
-        cancel_futures : bool, default=False
-            If True, cancel pending futures.
-        """
-        return self._executor.shutdown(wait=wait, cancel_futures=cancel_futures)
-
-    def __enter__(self):
-        """Enter the runtime context."""
-        return self._executor.__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit the runtime context (shutdown the executor)."""
-        return self._executor.__exit__(exc_type, exc_val, exc_tb)
+    @daemon.setter
+    def daemon(self, value):
+        """Set the daemon status."""
+        self._worker.daemon = value
 
 
 __all__ = [
