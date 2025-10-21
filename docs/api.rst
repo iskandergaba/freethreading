@@ -74,7 +74,6 @@ Utility Functions
 
    is_gil_enabled
    get_backend
-   cpu_count
    current_worker
    get_ident
    enumerate

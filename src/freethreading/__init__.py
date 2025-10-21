@@ -112,7 +112,6 @@ if is_gil_enabled():
     from multiprocessing import Semaphore as _Semaphore
     from multiprocessing import SimpleQueue as _SimpleQueue
     from multiprocessing import active_children as enumerate
-    from multiprocessing import cpu_count
     from multiprocessing import current_process as current_worker
     from os import getpid as get_ident
 
@@ -140,7 +139,6 @@ if is_gil_enabled():
     _backend = "multiprocessing"
 else:
     from concurrent.futures import ThreadPoolExecutor as _PoolExecutor
-    from os import cpu_count as _cpu_count
     from queue import Queue as _Queue
     from queue import SimpleQueue as _SimpleQueue
     from threading import Barrier as _Barrier
@@ -155,27 +153,6 @@ else:
     from threading import current_thread as _current_worker
     from threading import enumerate as _enumerate
     from threading import get_ident as _get_ident
-
-    def cpu_count():
-        """
-        Return the number of CPUs in the system.
-
-        Returns
-        -------
-        int
-            Number of logical CPU cores available.
-
-        Notes
-        -----
-        This is useful for determining the optimal number of :class:`Worker` objects
-        for parallel workloads.
-
-        Examples
-        --------
-        >>> from freethreading import cpu_count, Worker
-        >>> workers = [Worker(target=lambda: None) for _ in range(cpu_count())]
-        """
-        return _cpu_count()
 
     def current_worker():
         """
@@ -1355,7 +1332,6 @@ __all__ = [
     "SimpleQueue",
     "Worker",
     "active_count",
-    "cpu_count",
     "current_worker",
     "enumerate",
     "get_backend",

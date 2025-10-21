@@ -66,12 +66,6 @@ def test_backend_consistency(backend):
         assert backend.get_backend() == "threading"
 
 
-def test_cpu_count(backend):
-    count = backend.cpu_count()
-    assert isinstance(count, int)
-    assert count > 0
-
-
 def test_get_ident(backend):
     ident = backend.get_ident()
     assert isinstance(ident, int)

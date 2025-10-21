@@ -63,7 +63,7 @@ Only features available in **both** :mod:`threading` and :mod:`multiprocessing` 
 - Coordination: Event, Barrier, Condition
 - Communication: Queue, SimpleQueue
 - Workers: Thread/Process with common interface
-- Utilities: active_count, enumerate, current_worker, get_ident, cpu_count
+- Utilities: active_count, enumerate, current_worker, get_ident
 
 **Not included:**
 

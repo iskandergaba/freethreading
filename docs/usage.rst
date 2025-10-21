@@ -231,8 +231,8 @@ Inspection Functions
 
 .. code-block:: python
 
+   from os import cpu_count
    from freethreading import (
-       cpu_count,
        active_count,
        current_worker,
        enumerate,
@@ -256,7 +256,8 @@ Here's a complete example computing prime numbers:
 
 .. code-block:: python
 
-   from freethreading import Worker, Queue, cpu_count
+   from os import cpu_count
+   from freethreading import Worker, Queue
 
    def is_prime(n):
        if n < 2:
