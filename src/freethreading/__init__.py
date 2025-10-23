@@ -1168,17 +1168,24 @@ def active_count():
 
 def current_worker():
     """
-    Return the current :class:`Worker` object.
+    Return the current worker object.
 
     Returns
     -------
-    Worker
-        The :class:`Worker` object corresponding to the caller's thread or process.
+    Thread | BaseProcess
+        The underlying thread or process object corresponding to the caller.
+        Provides common attributes: ``name``, ``daemon``, ``ident``,
+        and methods: ``is_alive()``, ``join()``, ``start()``, ``run()``.
 
     See Also
     --------
     get_ident : Get the identifier of the current worker
     active_count : Get the number of active workers
+
+    Notes
+    -----
+    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
+    are also available but not portable across backends.
 
     Examples
     --------
@@ -1192,12 +1199,14 @@ def current_worker():
 
 def enumerate():
     """
-    Return a list of all active :class:`Worker` objects.
+    Return a list of all active worker objects.
 
     Returns
     -------
-    list of Worker
-        List of all :class:`Worker` objects currently alive.
+    list of Thread | BaseProcess
+        List of all underlying thread or process objects currently alive.
+        Each object provides common attributes: ``name``, ``daemon``, ``ident``,
+        and methods: ``is_alive()``, ``join()``, ``start()``, ``run()``.
 
     See Also
     --------
@@ -1206,8 +1215,8 @@ def enumerate():
 
     Notes
     -----
-    The list includes the main thread/process and all :class:`Worker` objects that
-    have been started but not yet finished.
+    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
+    are also available but not portable across backends.
 
     Examples
     --------
