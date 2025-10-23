@@ -2,8 +2,8 @@
 <h1>Freethreading</h1>
 
 [![Codecov](https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j)](https://codecov.io/gh/iskandergaba/freethreading)
-[![CI Build](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg)](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml)
 [![Docs](https://readthedocs.org/projects/freethreading/badge/?version=latest)](https://freethreading.readthedocs.io/en/latest)
+[![CI Build](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg)](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml)
 
 **Automatic selection between threading and multiprocessing based on Python's GIL status.**
 

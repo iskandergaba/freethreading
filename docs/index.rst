@@ -7,6 +7,10 @@ Freethreading
    :target: https://codecov.io/gh/iskandergaba/freethreading
    :alt: Codecov
 
+.. image:: https://readthedocs.org/projects/freethreading/badge/?version=latest
+   :target: https://pyriodicity.readthedocs.io/en/latest
+   :alt: Docs
+
 .. image:: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg
    :target: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml
    :alt: CI Build
