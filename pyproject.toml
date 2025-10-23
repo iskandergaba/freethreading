@@ -30,7 +30,10 @@ dev = [
     "pytest~=8.4.0",
     "pytest-cov~=7.0.0",
 ]
-docs = []
+docs = [
+    "sphinx~=8.1.0",
+    "furo~=2025.9.0",
+]
 
 [tool.uv]
 default-groups = "all"
