@@ -1,21 +1,20 @@
+.. raw:: html
+
+   <div style="text-align: center;">
+
 Freethreading
 =============
 
+|Codecov| |Docs| |CI Build|
+
 **Automatic selection between threading and multiprocessing based on Python's GIL status.**
 
-.. image:: https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j
-   :target: https://codecov.io/gh/iskandergaba/freethreading
-   :alt: Codecov
-
-.. image:: https://readthedocs.org/projects/freethreading/badge/?version=latest
-   :target: https://pyriodicity.readthedocs.io/en/latest
-   :alt: Docs
-
-.. image:: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg
-   :target: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml
-   :alt: CI Build
-
 Freethreading provides a unified API for concurrent programming that automatically uses :mod:`threading` when the GIL is disabled (free-threaded Python) and :mod:`multiprocessing` when the GIL is enabled (standard Python). Write your code once and get optimal performance regardless of Python build.
+
+.. raw:: html
+
+   </div>
+
 
 Installation
 ------------
@@ -79,3 +78,13 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. |Codecov| image:: https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=D5F3PKSOEK
+   :target: https://codecov.io/gh/iskandergaba/freethreading
+   :alt: Codecov
+.. |Docs| image:: https://readthedocs.org/projects/freethreading/badge/?version=latest
+   :target: https://freethreading.readthedocs.io/en/latest
+   :alt: Docs
+.. |CI Build| image:: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml
+   :alt: CI Build
