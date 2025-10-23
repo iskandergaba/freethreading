@@ -207,17 +207,17 @@ SimpleQueue
 Executor Pattern
 ----------------
 
-For higher-level parallelism, use :class:`~freethreading.PoolExecutor`:
+For higher-level parallelism, use :class:`~freethreading.WorkerPoolExecutor`:
 
 .. code-block:: python
 
-   from freethreading import PoolExecutor
+   from freethreading import WorkerPoolExecutor
 
    def compute(x):
        return x * x
 
    # Automatically uses ThreadPoolExecutor or ProcessPoolExecutor
-   with PoolExecutor(max_workers=4) as executor:
+   with WorkerPoolExecutor(max_workers=4) as executor:
        results = executor.map(compute, range(10))
        print(list(results))
 

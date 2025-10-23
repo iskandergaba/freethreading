@@ -520,105 +520,6 @@ class Lock:
         return self._lock.__exit__(exc_type, exc_val, exc_tb)
 
 
-class PoolExecutor:
-    """
-    Executor that manages a pool of :class:`Worker` objects.
-
-    Provides a high-level interface for asynchronously executing callables using
-    a pool of workers. Uses :class:`concurrent.futures.ThreadPoolExecutor` or
-    :class:`concurrent.futures.ProcessPoolExecutor` depending on backend.
-
-    Parameters
-    ----------
-    max_workers : int, optional
-        Maximum number of workers in the pool.
-    **kwargs
-        Additional arguments passed to the underlying executor.
-
-    See Also
-    --------
-    Worker : Lower-level worker interface
-    concurrent.futures.ThreadPoolExecutor : Threading implementation
-    concurrent.futures.ProcessPoolExecutor : Multiprocessing implementation
-
-    Examples
-    --------
-    >>> from freethreading import PoolExecutor
-    >>> def square(x):
-    ...     return x * x
-    >>> with PoolExecutor(max_workers=4) as executor:
-    ...     results = list(executor.map(square, range(10)))
-    >>> results
-    [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
-    """
-
-    def __init__(self, max_workers=None, **kwargs):
-        self._executor = _PoolExecutor(max_workers=max_workers, **kwargs)
-
-    def submit(self, fn, *args, **kwargs):
-        """
-        Submit a callable to be executed.
-
-        Parameters
-        ----------
-        fn : callable
-            The callable to execute.
-        *args
-            Positional arguments for fn.
-        **kwargs
-            Keyword arguments for fn.
-
-        Returns
-        -------
-        Future
-            A Future representing the execution.
-        """
-        return self._executor.submit(fn, *args, **kwargs)
-
-    def map(self, fn, *iterables, timeout=None, chunksize=1):
-        """
-        Map a function over iterables.
-
-        Parameters
-        ----------
-        fn : callable
-            Function to apply.
-        *iterables
-            Iterables to map over.
-        timeout : float, optional
-            Maximum time to wait for results.
-        chunksize : int, default=1
-            Size of chunks for multiprocessing.
-
-        Returns
-        -------
-        iterator
-            Iterator over results.
-        """
-        return self._executor.map(fn, *iterables, timeout=timeout, chunksize=chunksize)
-
-    def shutdown(self, wait=True, cancel_futures=False):
-        """
-        Shutdown the executor.
-
-        Parameters
-        ----------
-        wait : bool, default=True
-            If True, wait for pending futures to complete.
-        cancel_futures : bool, default=False
-            If True, cancel pending futures.
-        """
-        return self._executor.shutdown(wait=wait, cancel_futures=cancel_futures)
-
-    def __enter__(self):
-        """Enter the runtime context."""
-        return self._executor.__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit the runtime context (shutdown the executor)."""
-        return self._executor.__exit__(exc_type, exc_val, exc_tb)
-
-
 class Queue:
     """
     Unified Queue interface for worker communication.
@@ -1026,7 +927,7 @@ class Worker:
     --------
     threading.Thread : Threading implementation
     multiprocessing.Process : Multiprocessing implementation
-    PoolExecutor : High-level interface for managing worker pools
+    WorkerPoolExecutor : High-level interface for managing worker pools
 
     Examples
     --------
@@ -1131,6 +1032,105 @@ class Worker:
     def daemon(self, value):
         """Set the daemon status."""
         self._worker.daemon = value
+
+
+class WorkerPoolExecutor:
+    """
+    Executor that manages a pool of :class:`Worker` objects.
+
+    Provides a high-level interface for asynchronously executing callables using
+    a pool of workers. Uses :class:`concurrent.futures.ThreadPoolExecutor` or
+    :class:`concurrent.futures.ProcessPoolExecutor` depending on backend.
+
+    Parameters
+    ----------
+    max_workers : int, optional
+        Maximum number of workers in the pool.
+    **kwargs
+        Additional arguments passed to the underlying executor.
+
+    See Also
+    --------
+    Worker : Lower-level worker interface
+    concurrent.futures.ThreadPoolExecutor : Threading implementation
+    concurrent.futures.ProcessPoolExecutor : Multiprocessing implementation
+
+    Examples
+    --------
+    >>> from freethreading import WorkerPoolExecutor
+    >>> def square(x):
+    ...     return x * x
+    >>> with WorkerPoolExecutor(max_workers=4) as executor:
+    ...     results = list(executor.map(square, range(10)))
+    >>> results
+    [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+    """
+
+    def __init__(self, max_workers=None, **kwargs):
+        self._executor = _PoolExecutor(max_workers=max_workers, **kwargs)
+
+    def submit(self, fn, *args, **kwargs):
+        """
+        Submit a callable to be executed.
+
+        Parameters
+        ----------
+        fn : callable
+            The callable to execute.
+        *args
+            Positional arguments for fn.
+        **kwargs
+            Keyword arguments for fn.
+
+        Returns
+        -------
+        Future
+            A Future representing the execution.
+        """
+        return self._executor.submit(fn, *args, **kwargs)
+
+    def map(self, fn, *iterables, timeout=None, chunksize=1):
+        """
+        Map a function over iterables.
+
+        Parameters
+        ----------
+        fn : callable
+            Function to apply.
+        *iterables
+            Iterables to map over.
+        timeout : float, optional
+            Maximum time to wait for results.
+        chunksize : int, default=1
+            Size of chunks for multiprocessing.
+
+        Returns
+        -------
+        iterator
+            Iterator over results.
+        """
+        return self._executor.map(fn, *iterables, timeout=timeout, chunksize=chunksize)
+
+    def shutdown(self, wait=True, cancel_futures=False):
+        """
+        Shutdown the executor.
+
+        Parameters
+        ----------
+        wait : bool, default=True
+            If True, wait for pending futures to complete.
+        cancel_futures : bool, default=False
+            If True, cancel pending futures.
+        """
+        return self._executor.shutdown(wait=wait, cancel_futures=cancel_futures)
+
+    def __enter__(self):
+        """Enter the runtime context."""
+        return self._executor.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the runtime context (shutdown the executor)."""
+        return self._executor.__exit__(exc_type, exc_val, exc_tb)
 
 
 def active_count():
@@ -1289,12 +1289,12 @@ __all__ = [
     "Condition",
     "Event",
     "Lock",
-    "PoolExecutor",
     "Queue",
     "RLock",
     "Semaphore",
     "SimpleQueue",
     "Worker",
+    "WorkerPoolExecutor",
     "active_count",
     "current_worker",
     "enumerate",

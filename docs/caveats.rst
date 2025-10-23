@@ -68,7 +68,7 @@ Only features available in **both** :mod:`threading` and :mod:`multiprocessing` 
 **Not included:**
 
 - Thread-local/process-local storage
-- Thread/process pooling (use :class:`~freethreading.PoolExecutor` instead)
+- Thread/process pooling (use :class:`~freethreading.WorkerPoolExecutor` instead)
 - Manager objects (multiprocessing-specific)
 - Shared memory types (multiprocessing-specific)
 - Timers (threading-specific)
@@ -94,10 +94,10 @@ Process creation (multiprocessing) has **significant overhead** compared to thre
        w.start()
        w.join()
 
-   # Better: Use PoolExecutor for many tasks
-   from freethreading import PoolExecutor
+   # Better: Use WorkerPoolExecutor for many tasks
+   from freethreading import WorkerPoolExecutor
 
-   with PoolExecutor(max_workers=4) as executor:
+   with WorkerPoolExecutor(max_workers=4) as executor:
        executor.map(small_task, range(1000))
 
 

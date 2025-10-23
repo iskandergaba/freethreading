@@ -525,14 +525,14 @@ def test_simple_queue_blocking_warnings(backend):
 
 
 def test_pool_executor_map(backend):
-    with backend.PoolExecutor(max_workers=2) as executor:
+    with backend.WorkerPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(square, [1, 2, 3, 4]))
 
     assert results == [1, 4, 9, 16]
 
 
 def test_pool_executor_submit(backend):
-    with backend.PoolExecutor(max_workers=2) as executor:
+    with backend.WorkerPoolExecutor(max_workers=2) as executor:
         future = executor.submit(square, 5)
         result = future.result()
 
@@ -540,7 +540,7 @@ def test_pool_executor_submit(backend):
 
 
 def test_pool_executor_shutdown(backend):
-    executor = backend.PoolExecutor(max_workers=2)
+    executor = backend.WorkerPoolExecutor(max_workers=2)
 
     # Submit a task
     future = executor.submit(square, 3)

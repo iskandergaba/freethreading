@@ -11,7 +11,7 @@ Workers
    :nosignatures:
 
    Worker
-   PoolExecutor
+   WorkerPoolExecutor
 
 Synchronization Primitives
 ---------------------------
