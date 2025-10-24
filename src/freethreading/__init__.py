@@ -837,7 +837,7 @@ class SimpleQueue:
 
         Warnings
         --------
-        The multiprocessing backend ignores block and timeout parameters.
+        The multiprocessing backend ignores ``block`` and ``timeout`` parameters.
         """
         if _backend == "threading":
             self._queue.put(item, block=block, timeout=timeout)
@@ -869,7 +869,7 @@ class SimpleQueue:
 
         Warnings
         --------
-        The multiprocessing backend ignores block and timeout parameters
+        The multiprocessing backend ignores ``block`` and ``timeout`` parameters
         and always blocks until an item is available.
         """
         if _backend == "threading":
