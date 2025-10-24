@@ -1,79 +1,9 @@
 API Reference
 =============
 
-.. currentmodule:: freethreading
+This page contains the complete API reference for the ``freethreading`` module.
 
-Workers
--------
+.. toctree::
+   :maxdepth: 2
 
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   Worker
-   WorkerPoolExecutor
-
-Synchronization Primitives
----------------------------
-
-Locks
-^^^^^
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   Lock
-   RLock
-
-Semaphores
-^^^^^^^^^^
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   Semaphore
-   BoundedSemaphore
-
-Condition Variables
-^^^^^^^^^^^^^^^^^^^
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   Condition
-
-Events and Barriers
-^^^^^^^^^^^^^^^^^^^
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   Event
-   Barrier
-
-Communication
--------------
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   Queue
-   SimpleQueue
-
-Utility Functions
------------------
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-   get_backend
-   current_worker
-   get_ident
-   enumerate
-   active_count
+   generated/freethreading/index

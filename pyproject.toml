@@ -31,8 +31,10 @@ dev = [
     "pytest-cov~=7.0.0",
 ]
 docs = [
-    "sphinx~=8.1.0",
-    "furo~=2025.9.0",
+    "sphinx~=8.2.0",
+    "sphinx-autoapi~=3.6.0",
+    "sphinx-autobuild~=2025.08.0",
+    "furo~=2025.09.0",
 ]
 
 [tool.uv]

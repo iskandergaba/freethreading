@@ -1,13 +1,6 @@
-"""Configuration file for the Sphinx documentation builder."""
-
-import sys
-from pathlib import Path
-
 import tomllib
 
-# Add the project source to the path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
+# Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
@@ -16,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Freethreading"
-copyright = "2025, Iskander Gaba"
+copyright = "%Y, Iskander Gaba"
 author = "Iskander Gaba"
 with open("../pyproject.toml", "rb") as f:
     pyproject_data = tomllib.load(f)
@@ -25,25 +18,26 @@ with open("../pyproject.toml", "rb") as f:
 # General configuration
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.napoleon",
-]
-
-# Autosummary settings
-autosummary_generate = True
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+extensions = ["autoapi.extension", "sphinx.ext.napoleon", "sphinx.ext.intersphinx"]
 
-# Options for autodoc
-# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+# AutoAPI settings
+# https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
 
-autodoc_typehints = "description"
-autodoc_member_order = "bysource"
-autoclass_content = "class"
-autodoc_inherit_docstrings = False
+autoapi_dirs = ["../src/freethreading"]
+autoapi_type = "python"
+autoapi_root = "generated"
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "imported-members",
+    "show-inheritance",
+    "show-module-summary",
+]
+autoapi_member_order = "bysource"
+autoapi_keep_files = True
+autoapi_add_toctree_entry = False
 
 # Options for intersphinx
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
@@ -55,11 +49,19 @@ intersphinx_mapping = {
 # Options for HTML output
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "furo"
-html_static_path = ["_static"]
 html_title = "Freethreading"
-html_theme_options = {
-    "source_repository": "https://github.com/iskandergaba/freethreading",
-    "source_branch": "main",
-    "source_directory": "docs/",
+html_static_path = ["_static"]
+html_theme = "furo"
+html_copy_source = False
+html_show_sourcelink = False
+html_theme_options = {}
+
+# Sphinx build compatibility temporary workaround for Read the Docs
+# https://github.com/readthedocs/sphinx-build-compatibility
+
+html_context = {
+    "READTHEDOCS": True,
+    "display_github": True,
+    "github_user": "iskandergaba",
+    "github_repo": "freethreading",
 }
