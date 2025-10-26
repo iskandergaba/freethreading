@@ -1,29 +1,27 @@
-.. raw:: html
-
-   <div style="text-align: center;">
-
-Freethreading
-=============
+``freethreading`` — GIL-agnostic parallelism
+============================================
 
 |Codecov| |Docs| |CI Build|
 
-**Automatic selection between threading and multiprocessing based on Python's GIL status.**
+--------------------------------------------
 
-Freethreading provides a unified API for concurrent programming that automatically uses :mod:`threading` when the GIL is disabled (free-threaded Python) and :mod:`multiprocessing` when the GIL is enabled (standard Python). Write your code once and get optimal performance regardless of Python build.
+.. warning::
+   This project is a work in progress and is not ready yet for production use.
 
-.. raw:: html
-
-   </div>
-
+``freethreading`` provides a unified Global Interpreter Lock (GIL) agnostic concurrency API that
+automatically selects :mod:`threading` for execution when the GIL is disabled (i.e., free-threaded
+Python) and falls back to :mod:`multiprocessing` otherwise. ``freethreading`` allows you to write
+your code once and get optimal performance regardless of Python build, always bypassing the GIL
+and using :mod:`threading` whenever possible.
 
 Installation
 ------------
 
-To install ``freethreading``, simply run:
+.. To install ``freethreading``, simply run:
 
-.. code-block:: shell
+.. .. code-block:: shell
 
-   pip install freethreading
+..    pip install freethreading
 
 To install the latest development version, you can run:
 
@@ -35,31 +33,34 @@ To install the latest development version, you can run:
 Quick Start
 -----------
 
-.. code-block:: python
+.. code-block:: pycon
 
-   import freethreading
-
-   # Check which backend is being used
-   print(freethreading.get_backend())  # 'threading' or 'multiprocessing'
-
-   # Use unified API - automatically selects best backend
-   from freethreading import Worker, Lock, Queue
-
-   # Create synchronization primitives in main scope
-   q = Queue()
-   lock = Lock()
-
-   def worker_function():
-       """Worker accesses queue and lock from outer scope."""
-       with lock:
-           q.put("Hello from worker!")
-
-   # Create and start worker
-   worker = Worker(target=worker_function)
-   worker.start()
-   worker.join()
-   
-   print(q.get())  # 'Hello from worker!'
+   >>> from freethreading import get_backend, WorkerPoolExecutor
+   >>>
+   >>> # Check which backend is being used
+   >>> print(get_backend())
+   threading # or 'multiprocessing' depending on Python build
+   >>>
+   >>> def factorial(n):
+   ...     """Compute factorial of n."""
+   ...     result = 1
+   ...     for i in range(2, n + 1):
+   ...         result *= i
+   ...     return result
+   ...
+   >>> # Compute factorials in parallel using WorkerPoolExecutor
+   >>> numbers = [5, 10, 15, 20]
+   >>> with WorkerPoolExecutor(max_workers=4) as executor:
+   ...     results = list(executor.map(factorial, numbers))
+   ...
+   >>> # Display results
+   >>> for num, fact in zip(numbers, results):
+   ...     print(f"{num}! = {fact}")
+   ...
+   5! = 120
+   10! = 3628800
+   15! = 1307674368000
+   20! = 2432902008176640000
 
 
 Contents
