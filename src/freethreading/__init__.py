@@ -1241,10 +1241,6 @@ def get_backend() -> Literal["threading", "multiprocessing"]:
     Literal['threading', 'multiprocessing']
         'threading' when GIL is disabled, 'multiprocessing' when GIL is enabled.
 
-    See Also
-    --------
-    is_gil_enabled : Check if GIL is enabled
-
     Examples
     --------
     >>> import freethreading
