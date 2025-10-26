@@ -34,11 +34,11 @@ docs = [
     "sphinx~=8.2.0",
     "sphinx-autoapi~=3.6.0",
     "sphinx-autobuild~=2025.08.0",
-    "furo~=2025.09.0",
+    "python-docs-theme~=2025.10"
 ]
 
-[tool.uv]
-default-groups = "all"
+[tool.uv.dependency-groups]
+docs = { requires-python = ">=3.12" }
 
 [tool.ruff.lint]
 extend-select = ["E501"]

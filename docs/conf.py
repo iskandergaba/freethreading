@@ -20,9 +20,16 @@ with open("../pyproject.toml", "rb") as f:
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-extensions = ["autoapi.extension", "sphinx.ext.napoleon", "sphinx.ext.intersphinx"]
+extensions = ["sphinx.ext.napoleon", "sphinx.ext.intersphinx", "autoapi.extension"]
 
-# AutoAPI settings
+# Options for intersphinx
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+}
+
+# Options for AutoAPI
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
 
 autoapi_dirs = ["../src/freethreading"]
@@ -39,29 +46,12 @@ autoapi_member_order = "bysource"
 autoapi_keep_files = True
 autoapi_add_toctree_entry = False
 
-# Options for intersphinx
-# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
-
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-}
-
 # Options for HTML output
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_title = "Freethreading"
+html_theme = "python_docs_theme"
 html_static_path = ["_static"]
-html_theme = "furo"
 html_copy_source = False
 html_show_sourcelink = False
 html_theme_options = {}
-
-# Sphinx build compatibility temporary workaround for Read the Docs
-# https://github.com/readthedocs/sphinx-build-compatibility
-
-html_context = {
-    "READTHEDOCS": True,
-    "display_github": True,
-    "github_user": "iskandergaba",
-    "github_repo": "freethreading",
-}
