@@ -62,7 +62,7 @@ if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from multiprocessing import SimpleQueue as _SimpleQueue
     from multiprocessing import active_children as _enumerate
     from multiprocessing import current_process as _current_worker
-    from os import getpid as get_ident
+    from os import getpid as _get_ident
 
     _backend = "multiprocessing"
 else:
@@ -1239,7 +1239,7 @@ def get_backend() -> Literal["threading", "multiprocessing"]:
     Returns
     -------
     Literal['threading', 'multiprocessing']
-        'threading' when GIL is disabled, 'multiprocessing' when GIL is enabled.
+        'threading' when GIL is disabled, and 'multiprocessing' otherwise.
 
     Examples
     --------
