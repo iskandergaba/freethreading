@@ -8,11 +8,11 @@ import tomllib
 # Project information
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Freethreading"
-copyright = "%Y, Iskander Gaba"
 author = "Iskander Gaba"
+copyright = f"%Y, {author}"
 with open("../pyproject.toml", "rb") as f:
     pyproject_data = tomllib.load(f)
+    project = pyproject_data["project"]["name"]
     release = pyproject_data["project"]["version"]
 
 # General configuration
@@ -49,9 +49,12 @@ autoapi_add_toctree_entry = False
 # Options for HTML output
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_title = "Freethreading"
 html_theme = "python_docs_theme"
 html_static_path = ["_static"]
 html_copy_source = False
 html_show_sourcelink = False
-html_theme_options = {}
+html_theme_options = {
+    "root_name": "Freethreading",
+    "root_url": "https://freethreading.readthedocs.io",
+    "issues_url": "https://github.com/iskandergaba/freethreading/issues",
+}
