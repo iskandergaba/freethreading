@@ -1133,6 +1133,45 @@ class WorkerPoolExecutor:
         return self._executor.__exit__(exc_type, exc_val, exc_tb)
 
 
+def active_children():
+    """
+    Return a list of all active workers, excluding the current one.
+
+    Returns
+    -------
+    list of Thread | BaseProcess
+        List of child thread or process objects currently alive, excluding the
+        current worker. Each object provides common attributes: ``name``, ``daemon``,
+        ``ident``, and methods: ``is_alive()``, ``join()``, ``start()``, ``run()``.
+
+    See Also
+    --------
+    active_count : Get the count of active workers
+    current_worker : Get the current worker
+    enumerate : Get all workers including current
+
+    Notes
+    -----
+    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
+    are also available but not portable across backends.
+
+    Examples
+    --------
+    >>> from freethreading import active_children, Worker
+    >>> def task():
+    ...     pass
+    >>> w = Worker(target=task)
+    >>> w.start()
+    >>> children = active_children()
+    >>> len(children) >= 1  # At least our worker  # doctest: +SKIP
+    True
+    """
+    if _backend == "threading":
+        return [t for t in _enumerate() if t is not _current_worker()]
+    else:
+        return _enumerate()
+
+
 def active_count():
     """
     Return the number of currently active :class:`Worker` objects.
@@ -1197,41 +1236,6 @@ def current_worker():
     return _current_worker()
 
 
-def enumerate():
-    """
-    Return a list of all active worker objects.
-
-    Returns
-    -------
-    list of Thread | BaseProcess
-        List of all underlying thread or process objects currently alive.
-        Each object provides common attributes: ``name``, ``daemon``, ``ident``,
-        and methods: ``is_alive()``, ``join()``, ``start()``, ``run()``.
-
-    See Also
-    --------
-    active_count : Get the count of active workers
-    current_worker : Get the current worker
-
-    Notes
-    -----
-    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
-    are also available but not portable across backends.
-
-    Examples
-    --------
-    >>> from freethreading import enumerate, Worker
-    >>> def task():
-    ...     pass
-    >>> w = Worker(target=task)
-    >>> w.start()
-    >>> workers = enumerate()
-    >>> len(workers) >= 2  # At least main + our worker  # doctest: +SKIP
-    True
-    """
-    return _enumerate()
-
-
 def get_backend() -> Literal["threading", "multiprocessing"]:
     """
     Get the name of the active concurrency backend.
@@ -1279,6 +1283,47 @@ def get_ident():
     return _get_ident()
 
 
+def enumerate():
+    """
+    Return a list of all active worker objects, including the current one.
+
+    Returns
+    -------
+    list of Thread | BaseProcess
+        List of all underlying thread or process objects currently alive,
+        including the current worker. Each object provides common attributes:
+        ``name``, ``daemon``, ``ident``, and methods: ``is_alive()``, ``join()``,
+        ``start()``, ``run()``.
+
+    See Also
+    --------
+    current_worker : Get the current worker
+    active_children : Get child workers
+    active_count : Get the count of active workers
+
+    Notes
+    -----
+    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
+    are also available but not portable across backends.
+
+    Examples
+    --------
+    >>> from freethreading import enumerate, Worker
+    >>> def task():
+    ...     pass
+    >>> w = Worker(target=task)
+    >>> w.start()
+    >>> workers = enumerate()
+    >>> len(workers) >= 2  # At least main + our worker  # doctest: +SKIP
+    True
+    """
+
+    workers = list(_enumerate())
+    if _backend == "multiprocessing":
+        workers.append(_current_worker())
+    return workers
+
+
 __all__ = [
     "Barrier",
     "BoundedSemaphore",
@@ -1291,9 +1336,10 @@ __all__ = [
     "SimpleQueue",
     "Worker",
     "WorkerPoolExecutor",
+    "active_children",
     "active_count",
     "current_worker",
-    "enumerate",
     "get_backend",
     "get_ident",
+    "enumerate",
 ]
