@@ -33,20 +33,10 @@ def task_that_returns_value():
 @pytest.fixture(params=[True, False], ids=["multiprocessing", "threading"])
 def backend(request, monkeypatch):
     """Fixture that tests both backends by mocking GIL status."""
-    gil_enabled = request.param
-
-    if gil_enabled:
-        monkeypatch.setattr(sys, "_is_gil_enabled", lambda: True, raising=False)
-    else:
-        monkeypatch.setattr(sys, "_is_gil_enabled", lambda: False, raising=False)
-
+    monkeypatch.setattr(sys, "_is_gil_enabled", lambda: request.param, raising=False)
     import freethreading
 
-    importlib.reload(freethreading)
-
-    yield freethreading
-
-    importlib.reload(freethreading)
+    return importlib.reload(freethreading)
 
 
 def test_get_backend(backend):
