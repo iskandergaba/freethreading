@@ -1,309 +1,431 @@
 Usage Guide
 ===========
 
-Basic Concepts
---------------
+Overview
+--------
 
-Freethreading provides a unified API for concurrent programming that adapts to your Python runtime:
+:mod:`freethreading` shields you from differences between GIL-enabled Python builds and free-threaded builds. At import
+time it decides whether to route calls through :mod:`multiprocessing` (GIL-enabled Python) or :mod:`threading`
+(GIL-disabled Python). The public surface mirrors the common subset shared by both backends, so you can write portable
+code once and run it efficiently everywhere.
 
-- **With GIL enabled** (standard Python): Uses :mod:`multiprocessing` for true parallelism
-- **With GIL disabled** (free-threaded Python 3.13+): Uses :mod:`threading` for lower overhead
+Parallel Execution
+------------------
 
-This automatic selection happens at import time, so your code remains identical across different Python builds.
+:mod:`freethreading` offers low-level :class:`~freethreading.Worker` objects for direct task control and high-level
+:class:`~freethreading.WorkerPoolExecutor` objects for managed execution.
 
-Checking Backend
-----------------
+``Worker``
+^^^^^^^^^^
 
-You can determine which backend is active:
+The :class:`~freethreading.Worker` class represents an activity that is run in a separate thread or process. It is a
+wrapper that carries over the shared controls from :class:`~threading.Thread` and :class:`~multiprocessing.Process`, so
+that you can name workers, set :attr:`~freethreading.Worker.daemon`, and call familiar methods like
+:meth:`~freethreading.Worker.start()`, :meth:`~freethreading.Worker.join()`, and
+:meth:`~freethreading.Worker.is_alive()`, without worrying about the underlying implementation. Here's a quick example:
 
-.. code-block:: python
+.. code-block:: pycon
 
-   import freethreading
+   >>> from freethreading import Worker, current_worker
+   >>>
+   >>> def greet():
+   ...     print(f"Hello from '{current_worker().name}'")
+   ...
+   >>> worker = Worker(name="Worker", target=greet)
+   >>> worker.start()
+   >>> worker.join()
+   Hello from 'Worker'
+   >>> daemon = Worker(name="Daemon", target=greet, daemon=True)
+   >>> daemon.start()
+   >>> daemon.join()
+   Hello from 'Daemon'
 
-   # Get backend name directly
-   backend = freethreading.get_backend()  # 'threading' or 'multiprocessing'
+Set :attr:`~freethreading.Worker.daemon` to ``True`` when you need a fire-and-forget background worker, then invoke
+methods like :meth:`~freethreading.Worker.is_alive()` and :meth:`~freethreading.Worker.join()`, and check attributes
+such as :attr:`~freethreading.Worker.name`, exactly as you would with Python's standard :mod:`threading` or
+:mod:`multiprocessing` modules.
 
-   if backend == 'multiprocessing':
-       print("GIL is enabled - using multiprocessing")
-   else:
-       print("GIL is disabled - using threading")
+``WorkerPoolExecutor``
+^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~freethreading.WorkerPoolExecutor` provides a unified drop-in replacement for
+:class:`~concurrent.futures.ThreadPoolExecutor` and :class:`~concurrent.futures.ProcessPoolExecutor`. For instance:
+
+.. code-block:: pycon
+
+   >>> from freethreading import WorkerPoolExecutor
+   >>>
+   >>> def square(x):
+   ...     return x * x
+   ...
+   >>> with WorkerPoolExecutor(max_workers=4) as executor:
+   ...     futures = executor.map(square, range(5))
+   ...     print(list(futures))
+   ...
+   [0, 1, 4, 9, 16]
 
 
-Workers (Threads/Processes)
-----------------------------
+Data Exchange
+-------------
 
-The :class:`~freethreading.Worker` class provides a unified interface for creating threads or processes:
+Workers can exchange data through :class:`~freethreading.Queue` for structured coordination or
+:class:`~freethreading.SimpleQueue` for lightweight messaging.
 
-.. code-block:: python
+``Queue``
+^^^^^^^^^
 
-   from freethreading import Worker
+:class:`freethreading.Queue` wraps :class:`queue.Queue` and :class:`multiprocessing.JoinableQueue` into a single
+interface that behaves identically on both :mod:`threading` and :mod:`multiprocessing` backends. As an example:
 
-   def task(name, count):
-       for i in range(count):
-           print(f"{name}: {i}")
+.. code-block:: pycon
 
-   # Create and start worker
-   w = Worker(target=task, args=("Worker-1", 5))
-   w.start()
-   w.join()
+    >>> from freethreading import Queue, Worker
+    >>> queue = Queue()
+    >>>
+    >>> def producer():
+    ...     for value in range(3):
+    ...         queue.put(value)
+    ...     queue.put(None)  # Sentinel marks completion
+    ...
+    >>> def consumer():
+    ...     while True:
+    ...         item = queue.get()
+    ...         if item is None:
+    ...             queue.task_done()
+    ...             break
+    ...         print(f"Processing {item}")
+    ...         queue.task_done()
+    ...
+    >>> producer_worker = Worker(name="Producer", target=producer)
+    >>> consumer_worker = Worker(name="Consumer", target=consumer)
+    >>> producer_worker.start()
+    >>> consumer_worker.start()
+    >>> queue.join()
+    >>> producer_worker.join()
+    >>> consumer_worker.join()
+    Processing 0
+    Processing 1
+    Processing 2
 
-   # With daemon workers
-   w = Worker(target=task, args=("Background", 10), daemon=True)
-   w.start()
+
+``SimpleQueue``
+^^^^^^^^^^^^^^^
+
+Similarly, :class:`freethreading.SimpleQueue` wraps the unbounded, lightweight :class:`queue.SimpleQueue` and
+:class:`multiprocessing.SimpleQueue` into a single interface that behaves identically on both backends. For example:
+
+.. code-block:: pycon
+
+    >>> from freethreading import SimpleQueue, Worker
+    >>> queue = SimpleQueue()
+    >>>
+    >>> def fill_queue():
+    ...     queue.put("hello")
+    ...     queue.put("world")
+    ...
+    >>> worker = Worker(target=fill_queue)
+    >>> worker.start()
+    >>> queue.get()
+    'hello'
+    >>> queue.get()
+    'world'
+    >>> worker.join()
+    >>> queue.empty()
+    True
 
 
 Synchronization Primitives
----------------------------
+--------------------------
 
-All synchronization primitives work identically across backends:
+:mod:`freethreading` offers the synchronization primitives common to :mod:`threading` and :mod:`multiprocessing`,
+enabling worker coordination and control of shared resources. Below are examples of how to use them.
 
-Locks
-^^^^^
+Locks and Reentrant Locks
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+:class:`~freethreading.Lock` and :class:`~freethreading.RLock` wrap the lock types found in :mod:`threading` and
+:mod:`multiprocessing`. A lock ensures only one worker enters a critical section at a time, and a reentrant lock allows
+the same worker to acquire it multiple times without deadlocking. Here's how they work:
 
-   from freethreading import Lock
+.. code-block:: pycon
 
-   lock = Lock()
+   >>> from freethreading import Lock, RLock, Worker, current_worker
+   >>>
+   >>> lock = Lock()
+   >>> rlock = RLock()
+   >>>
+   >>> def critical():
+   ...     with lock:
+   ...         print(f"'{current_worker().name}' acquired the lock")
+   ...
+   >>> def countdown(n):
+   ...     with rlock:
+   ...         if n > 0:
+   ...             print(f"'{current_worker().name}': {n}...")
+   ...             countdown(n - 1)
+   ...         else:
+   ...             print(f"'{current_worker().name}': go!")
+   ...
+   >>> workers = [Worker(name=f"Worker-{i}", target=critical) for i in range(2)]
+   >>> for w in workers:
+   ...     w.start()
+   >>> for w in workers:
+   ...     w.join()
+   ...
+   'Worker-0' acquired the lock
+   'Worker-1' acquired the lock
+   >>>
+   >>> workers = [Worker(name=f"Worker-{i}", target=countdown, args=(3,)) for i in range(2)]
+   >>> for w in workers:
+   ...     w.start()
+   >>> for w in workers:
+   ...     w.join()
+   ...
+   'Worker-0': 3...
+   'Worker-0': 2...
+   'Worker-0': 1...
+   'Worker-0': go!
+   'Worker-1': 3...
+   'Worker-1': 2...
+   'Worker-1': 1...
+   'Worker-1': go!
 
-   def critical_section():
-       with lock:
-           # Thread/process-safe code
-           print("In critical section")
 
-RLocks
-^^^^^^
+Semaphores and Conditions
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+:class:`~freethreading.Semaphore`, :class:`~freethreading.BoundedSemaphore`, and :class:`~freethreading.Condition`
+provide wrappers over their :mod:`threading` and :mod:`multiprocessing` equivalents. Semaphores control how many
+workers can access a resource at once, and conditions allow workers to wait until notified. The example below puts all
+of them to work:
 
-   from freethreading import RLock
 
-   rlock = RLock()
+.. code-block:: pycon
 
-   def recursive_function(n):
-       with rlock:
-           if n > 0:
-               recursive_function(n - 1)
+   >>> from freethreading import Condition, Queue, Semaphore, Worker, current_worker
+   >>>
+   >>> semaphore = Semaphore(2)
+   >>> condition = Condition()
+   >>> queue = Queue()
+   >>>
+   >>> def restricted():
+   ...     with semaphore:
+   ...         print(f"'{current_worker().name}' in restricted section")
+   ...
+   >>> def producer(data):
+   ...     with condition:
+   ...         queue.put(data)
+   ...         print(f"'{current_worker().name}' sent: {data}")
+   ...         condition.notify()
+   ...
+   >>> def consumer():
+   ...     with condition:
+   ...         condition.wait()
+   ...         print(f"'{current_worker().name}' received: {queue.get()}")
+   ...
+   >>> workers = [Worker(name=f"Worker-{i}", target=restricted) for i in range(3)]
+   >>> for w in workers:
+   ...     w.start()
+   >>> for w in workers:
+   ...     w.join()
+   ...
+   'Worker-0' in restricted section
+   'Worker-1' in restricted section
+   'Worker-2' in restricted section
+   >>>
+   >>> c = Worker(name="Consumer", target=consumer)
+   >>> p = Worker(name="Producer", target=producer, args=(42,))
+   >>> c.start()
+   >>> p.start()
+   >>> c.join()
+   >>> p.join()
+   'Producer' sent: 42
+   'Consumer' received: 42
 
-Semaphores
-^^^^^^^^^^
 
-.. code-block:: python
+:class:`~freethreading.BoundedSemaphore` behaves like :class:`~freethreading.Semaphore` but prevents over-releasing by
+raising :exc:`ValueError` if :meth:`~freethreading.BoundedSemaphore.release` is called more times than
+:meth:`~freethreading.BoundedSemaphore.acquire`. The following example shows the difference:
 
-   from freethreading import Semaphore, BoundedSemaphore
+.. code-block:: pycon
 
-   # Standard semaphore
-   sem = Semaphore(3)  # Allow 3 concurrent accesses
+   >>> from freethreading import Semaphore, BoundedSemaphore
+   >>> s = Semaphore(1)
+   >>> s.release()  # No error, counter increases silently
+   >>> s.release()  # Still no error
+   >>>
+   >>> b = BoundedSemaphore(1)
+   >>> b.release()
+   Traceback (most recent call last):
+       ...
+   ValueError: Semaphore released too many times
 
-   def limited_resource():
-       with sem:
-           # Only 3 workers can be here at once
-           print("Using resource")
-
-   # Bounded semaphore (prevents over-releasing)
-   bounded = BoundedSemaphore(2)
-
-Conditions
-^^^^^^^^^^
-
-.. code-block:: python
-
-   from freethreading import Condition, Worker
-
-   condition = Condition()
-   data = []
-
-   def producer():
-       with condition:
-           data.append("item")
-           condition.notify()
-
-   def consumer():
-       with condition:
-           condition.wait()
-           item = data.pop()
-           print(f"Consumed: {item}")
 
 Events and Barriers
 ^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+:class:`~freethreading.Event` and :class:`~freethreading.Barrier` wrap their :mod:`threading` and
+:mod:`multiprocessing` counterparts. Events broadcast a signal that unblocks waiting workers, while barriers hold
+workers until a fixed number have arrived. Below is a quick example:
 
-   from freethreading import Event, Barrier, Worker
+.. code-block:: pycon
 
-   # Events
-   event = Event()
-
-   def waiter():
-       print("Waiting for event...")
-       event.wait()
-       print("Event set!")
-
-   def setter():
-       import time
-       time.sleep(1)
-       event.set()
-
-   # Barriers
-   barrier = Barrier(3)  # Wait for 3 workers
-
-   def synchronized_task(i):
-       print(f"Worker {i} reached barrier")
-       barrier.wait()
-       print(f"Worker {i} past barrier")
-
-
-Queues
-------
-
-Use queues for safe data passing between workers:
-
-Queue
-^^^^^
-
-.. code-block:: python
-
-   from freethreading import Queue, Worker
-
-   q = Queue(maxsize=10)
-
-   def producer():
-       for i in range(5):
-           q.put(i)
-       q.put(None)  # Sentinel
-
-   def consumer():
-       while True:
-           item = q.get()
-           if item is None:
-               q.task_done()
-               break
-           print(f"Processing: {item}")
-           q.task_done()
-
-   p = Worker(target=producer)
-   c = Worker(target=consumer)
-   p.start()
-   c.start()
-   q.join()  # Wait for all tasks to complete
-   p.join()
-   c.join()
-
-SimpleQueue
-^^^^^^^^^^^
-
-.. code-block:: python
-
-   from freethreading import SimpleQueue
-
-   sq = SimpleQueue()
-   sq.put("Hello")
-   sq.put("World")
-
-   print(sq.get())  # 'Hello'
-   print(sq.empty())  # False
-
-
-Executor Pattern
-----------------
-
-For higher-level parallelism, use :class:`~freethreading.WorkerPoolExecutor`:
-
-.. code-block:: python
-
-   from freethreading import WorkerPoolExecutor
-
-   def compute(x):
-       return x * x
-
-   # Automatically uses ThreadPoolExecutor or ProcessPoolExecutor
-   with WorkerPoolExecutor(max_workers=4) as executor:
-       results = executor.map(compute, range(10))
-       print(list(results))
+   >>> from freethreading import Barrier, Event, Worker, current_worker
+   >>> start_signal = Event()
+   >>> checkpoint = Barrier(3)
+   >>>
+   >>> def runner():
+   ...     print(f"'{current_worker().name}' waiting for start signal")
+   ...     start_signal.wait()  # All runners wait for the event
+   ...     print(f"'{current_worker().name}' started")
+   ...     checkpoint.wait()  # Synchronize at the checkpoint
+   ...     print(f"'{current_worker().name}' passed checkpoint")
+   ...
+   >>> workers = [Worker(name=f"Runner-{i}", target=runner) for i in range(3)]
+   >>> for w in workers:
+   ...     w.start()
+   ...
+   'Runner-0' waiting for start signal
+   'Runner-1' waiting for start signal
+   'Runner-2' waiting for start signal
+   >>> start_signal.set()  # Signal all runners to start
+   'Runner-2' started
+   'Runner-0' started
+   'Runner-1' started
+   'Runner-1' passed checkpoint
+   'Runner-0' passed checkpoint
+   'Runner-2' passed checkpoint
+   >>> for w in workers:
+   ...     w.join()
+   ...
 
 
 Utility Functions
 -----------------
 
-Inspection Functions
-^^^^^^^^^^^^^^^^^^^^
+:mod:`freethreading` provides a collection of commonly used functions from both :mod:`threading` and
+:mod:`multiprocessing`. Here's a quick overview example of how to use them:
 
-.. code-block:: python
+.. code-block:: pycon
 
-   from os import cpu_count
-   from freethreading import (
-       active_count,
-       current_worker,
-       enumerate,
-       get_ident,
-   )
+   >>> from freethreading import (
+   ...     Worker,
+   ...     active_children,
+   ...     active_count,
+   ...     current_worker,
+   ...     enumerate,
+   ...     get_ident,
+   ... )
+   >>>
+   >>> def busy_wait():
+   ...     while True:
+   ...         pass
+   ...
+   >>> daemon = Worker(target=busy_wait, name="Daemon", daemon=True) # Daemon worker
+   >>> daemon.start()
+   >>>
+   >>> current_worker().name # 'MainThread' or 'MainProcess'
+   'MainThread'
+   >>> get_ident()  # Thread or process identifier
+   135793751029632
+   >>> active_count() # Number of active workers
+   2
+   >>> [worker.name for worker in enumerate()] # ['MainThread', 'daemon'] or ['MainProcess', 'daemon']
+   ['MainThread', 'Daemon']
+   >>> [child.name for child in active_children()]
+   ['Daemon']
 
-   print(f"CPUs: {cpu_count()}")
-   print(f"Active workers: {active_count()}")
-   print(f"Current worker: {current_worker()}")
-   print(f"Worker ID: {get_ident()}")
+In addition, :mod:`freethreading` offers :func:`~freethreading.get_backend()` function that returns the selected
+parallelism backend. This can be useful for debugging. Here's how to use it:
 
-   # List all active workers
-   for worker in enumerate():
-       print(f"Worker: {worker.name}")
+.. code-block:: pycon
 
+   >>> from freethreading import get_backend
+   >>> get_backend()  # 'threading' or 'multiprocessing' depending on your Python build
+   'threading'
 
-Example: Parallel Computing
-----------------------------
+End-to-End Example: Parallel Primes
+-----------------------------------
 
-Here's a complete example computing prime numbers:
+The following examples demonstrate finding primes in parallel using the low-level worker-queue pattern and the simpler
+executor pattern.
 
-.. code-block:: python
+Using ``Worker`` and ``Queue``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   from os import cpu_count
-   from freethreading import Worker, Queue
+This example uses workers and queues for fine-grained control over task distribution:
 
-   def is_prime(n):
-       if n < 2:
-           return False
-       for i in range(2, int(n ** 0.5) + 1):
-           if n % i == 0:
-               return False
-       return True
+.. code-block:: pycon
 
-   # Create queues in main scope
-   input_q = Queue()
-   output_q = Queue()
+   >>> from os import cpu_count
+   >>> from freethreading import Queue, Worker
+   >>>
+   >>> def is_prime(n):
+   ...     if n < 2:
+   ...         return False
+   ...     for i in range(2, int(n ** 0.5) + 1):
+   ...         if n % i == 0:
+   ...             return False
+   ...     return True
+   ...
+   >>> tasks = Queue()
+   >>> results = Queue()
+   >>> candidates = list(range(10_000, 10_100))
+   >>>
+   >>> def worker():
+   ...     while True:
+   ...         number = tasks.get()
+   ...         if number is None:
+   ...             tasks.task_done()
+   ...             break
+   ...         if is_prime(number):
+   ...             results.put(number)
+   ...         tasks.task_done()
+   ...
+   >>> pool = [Worker(target=worker) for _ in range(cpu_count())]
+   >>> for w in pool:
+   ...     w.start()
+   ...
+   >>> for candidate in candidates:
+   ...     tasks.put(candidate)
+   ...
+   >>> for _ in pool:
+   ...     tasks.put(None)
+   ...
+   >>> tasks.join()
+   >>> for w in pool:
+   ...     w.join()
+   ...
+   >>> primes = []
+   >>> while not results.empty():
+   ...     primes.append(results.get())
+   ...
+   >>> primes.sort()
+   >>> print(f"Found {len(primes)} primes: {primes}")
+   Found 11 primes: [10007, 10009, 10037, 10039, 10061, 10067, 10069, 10079, 10091, 10093, 10099]
 
-   def worker():
-       """Worker function that accesses queues from outer scope."""
-       while True:
-           n = input_q.get()
-           if n is None:
-               input_q.task_done()
-               break
-           if is_prime(n):
-               output_q.put(n)
-           input_q.task_done()
+Using ``WorkerPoolExecutor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   # Start workers
-   workers = []
-   for _ in range(cpu_count()):
-       w = Worker(target=worker)
-       w.start()
-       workers.append(w)
+The following example achieves the same result using :class:`~freethreading.WorkerPoolExecutor` for simplicity:
 
-   # Feed work
-   for i in range(1000, 2000):
-       input_q.put(i)
+.. code-block:: pycon
 
-   # Signal workers to stop
-   for _ in workers:
-       input_q.put(None)
-
-   # Wait for completion
-   input_q.join()
-   for w in workers:
-       w.join()
-
-   # Collect results
-   primes = []
-   while not output_q.empty():
-       primes.append(output_q.get())
-
-   print(f"Found {len(primes)} primes")
+   >>> from freethreading import WorkerPoolExecutor
+   >>>
+   >>> def is_prime(n):
+   ...     if n < 2:
+   ...         return False
+   ...     for i in range(2, int(n ** 0.5) + 1):
+   ...         if n % i == 0:
+   ...             return False
+   ...     return True
+   ...
+   >>> with WorkerPoolExecutor() as executor:
+   ...     candidates = range(10_000, 10_100)
+   ...     primes = [
+   ...          n for n, prime in zip(candidates, executor.map(is_prime, candidates)) if prime
+   ...     ]
+   ...
+   >>> print(f"Found {len(primes)} primes: {primes}")
+   Found 11 primes: [10007, 10009, 10037, 10039, 10061, 10067, 10069, 10079, 10091, 10093, 10099]
