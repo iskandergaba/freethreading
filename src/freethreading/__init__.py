@@ -13,7 +13,7 @@ Examples
 Basic usage with automatic backend selection:
 
 >>> import freethreading
->>> freethreading.get_backend()  # doctest: +SKIP
+>>> freethreading.get_backend()
 'multiprocessing'  # or 'threading' depending on Python build
 
 Create workers that adapt to the backend:
@@ -46,7 +46,11 @@ Use module-level functions instead of lambdas or nested functions.
 import pickle
 import sys
 import warnings
+from multiprocessing.process import BaseProcess
+from threading import Thread
 from typing import Literal
+
+_backend: Literal["threading", "multiprocessing"]
 
 if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from concurrent.futures import ProcessPoolExecutor as _PoolExecutor
@@ -60,11 +64,20 @@ if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from multiprocessing import RLock as _RLock
     from multiprocessing import Semaphore as _Semaphore
     from multiprocessing import SimpleQueue as _SimpleQueue
-    from multiprocessing import active_children as _enumerate
+    from multiprocessing import active_children as _active_children
     from multiprocessing import current_process as _current_worker
     from os import getpid as _get_ident
 
+    def _active_count():
+        return len(_enumerate())
+
+    def _enumerate():
+        workers = list(_active_children())
+        workers.append(_current_worker())
+        return workers
+
     _backend = "multiprocessing"
+
 else:
     from concurrent.futures import ThreadPoolExecutor as _PoolExecutor
     from queue import Queue as _Queue
@@ -81,6 +94,11 @@ else:
     from threading import current_thread as _current_worker
     from threading import enumerate as _enumerate
     from threading import get_ident as _get_ident
+
+    def _active_children():
+        children = list(_enumerate())
+        children.remove(_current_worker())
+        return children
 
     _backend = "threading"
 
@@ -117,9 +135,9 @@ class Barrier:
     ...     barrier.wait()
     ...     print(f"Worker {i} past barrier")
     >>> workers = [Worker(target=synchronized_task, args=(i,)) for i in range(3)]
-    >>> for w in workers:  # doctest: +SKIP
+    >>> for w in workers:
     ...     w.start()
-    >>> for w in workers:  # doctest: +SKIP
+    >>> for w in workers:
     ...     w.join()
     """
 
@@ -400,8 +418,8 @@ class Event:
     >>> w2 = Worker(target=setter)
     >>> w1.start()
     >>> w2.start()
-    >>> w1.join()  # doctest: +SKIP
-    >>> w2.join()  # doctest: +SKIP
+    >>> w1.join()
+    >>> w2.join()
     Event set!
     """
 
@@ -487,7 +505,7 @@ class Lock:
         """
         if timeout is None and _backend == "threading":
             timeout = -1
-        return self._lock.acquire(blocking, timeout)
+        return self._lock.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
         """Release the lock."""
@@ -503,7 +521,7 @@ class Lock:
             True if locked, False otherwise.
         """
         if hasattr(self._lock, "locked"):
-            return self._lock.locked()
+            return self._lock.locked()  # type: ignore[attr-defined]
 
         # Fallback for Python < 3.14
         if self.acquire(blocking=False):
@@ -713,7 +731,7 @@ class RLock:
         """
         if timeout is None and _backend == "threading":
             timeout = -1
-        return self._lock.acquire(blocking, timeout)
+        return self._lock.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
         """Release the lock, decrementing the recursion level."""
@@ -840,7 +858,7 @@ class SimpleQueue:
         The multiprocessing backend ignores ``block`` and ``timeout`` parameters.
         """
         if _backend == "threading":
-            self._queue.put(item, block=block, timeout=timeout)
+            self._queue.put(item, block, timeout)  # type: ignore[call-arg]
         else:
             if not block or timeout is not None:
                 warnings.warn(
@@ -873,7 +891,7 @@ class SimpleQueue:
         and always blocks until an item is available.
         """
         if _backend == "threading":
-            return self._queue.get(block=block, timeout=timeout)
+            return self._queue.get(block, timeout)  # type: ignore[call-arg]
         else:
             if not block or timeout is not None:
                 warnings.warn(
@@ -936,7 +954,7 @@ class Worker:
     ...     print(f"Hello from {name}")
     >>> w = Worker(target=task, args=("Worker-1",))
     >>> w.start()
-    >>> w.join()  # doctest: +SKIP
+    >>> w.join()
     Hello from Worker-1
     """
 
@@ -1133,7 +1151,7 @@ class WorkerPoolExecutor:
         return self._executor.__exit__(exc_type, exc_val, exc_tb)
 
 
-def active_children():
+def active_children() -> list[Thread] | list[BaseProcess]:
     """
     Return a list of all active workers, excluding the current one.
 
@@ -1163,16 +1181,13 @@ def active_children():
     >>> w = Worker(target=task)
     >>> w.start()
     >>> children = active_children()
-    >>> len(children) >= 1  # At least our worker  # doctest: +SKIP
+    >>> len(children) >= 1  # At least our worker
     True
     """
-    if _backend == "threading":
-        return [t for t in _enumerate() if t is not _current_worker()]
-    else:
-        return _enumerate()
+    return _active_children()
 
 
-def active_count():
+def active_count() -> int:
     """
     Return the number of currently active :class:`Worker` objects.
 
@@ -1199,13 +1214,13 @@ def active_count():
     >>> initial = active_count()
     >>> w = Worker(target=task)
     >>> w.start()
-    >>> active_count() >= initial + 1  # doctest: +SKIP
+    >>> active_count() >= initial + 1
     True
     """
-    return _active_count() if _backend == "threading" else len(enumerate())
+    return _active_count()
 
 
-def current_worker():
+def current_worker() -> Thread | BaseProcess:
     """
     Return the current worker object.
 
@@ -1230,7 +1245,7 @@ def current_worker():
     --------
     >>> from freethreading import current_worker
     >>> worker = current_worker()
-    >>> print(worker.name)  # doctest: +SKIP
+    >>> print(worker.name)
     MainThread
     """
     return _current_worker()
@@ -1248,14 +1263,14 @@ def get_backend() -> Literal["threading", "multiprocessing"]:
     Examples
     --------
     >>> import freethreading
-    >>> backend = freethreading.get_backend()  # doctest: +SKIP
-    >>> print(f"Using {backend} backend")  # doctest: +SKIP
+    >>> backend = freethreading.get_backend()
+    >>> print(f"Using {backend} backend")
     Using multiprocessing backend
     """
     return _backend
 
 
-def get_ident():
+def get_ident() -> int:
     """
     Return the identifier of the current worker.
 
@@ -1283,7 +1298,7 @@ def get_ident():
     return _get_ident()
 
 
-def enumerate():
+def enumerate() -> list[Thread] | list[BaseProcess]:
     """
     Return a list of all active worker objects, including the current one.
 
@@ -1314,14 +1329,10 @@ def enumerate():
     >>> w = Worker(target=task)
     >>> w.start()
     >>> workers = enumerate()
-    >>> len(workers) >= 2  # At least main + our worker  # doctest: +SKIP
+    >>> len(workers) >= 2  # At least main + our worker
     True
     """
-
-    workers = list(_enumerate())
-    if _backend == "multiprocessing":
-        workers.append(_current_worker())
-    return workers
+    return _enumerate()
 
 
 __all__ = [
