@@ -323,9 +323,13 @@ class Condition:
         bool
             True if acquired, False if timeout occurred.
         """
-        if timeout is None and _backend == "threading":
-            timeout = -1
-        return self._condition.acquire(blocking, timeout)
+        if _backend == "threading":
+            if timeout is None or timeout < 0:
+                timeout = -1
+        else:
+            if timeout is not None and timeout < 0:
+                timeout = None
+        return self._condition.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
         """Release the underlying lock."""
@@ -503,8 +507,12 @@ class Lock:
         bool
             True if acquired, False if timeout occurred.
         """
-        if timeout is None and _backend == "threading":
-            timeout = -1
+        if _backend == "threading":
+            if timeout is None or timeout < 0:
+                timeout = -1
+        else:
+            if timeout is not None and timeout < 0:
+                timeout = None
         return self._lock.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
@@ -729,8 +737,12 @@ class RLock:
         bool
             True if acquired, False if timeout occurred.
         """
-        if timeout is None and _backend == "threading":
-            timeout = -1
+        if _backend == "threading":
+            if timeout is None or timeout < 0:
+                timeout = -1
+        else:
+            if timeout is not None and timeout < 0:
+                timeout = None
         return self._lock.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
