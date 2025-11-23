@@ -18,7 +18,6 @@ with open("../pyproject.toml", "rb") as f:
 # General configuration
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 extensions = ["sphinx.ext.napoleon", "sphinx.ext.intersphinx", "autoapi.extension"]
 
@@ -50,7 +49,6 @@ autoapi_add_toctree_entry = False
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "python_docs_theme"
-html_static_path = ["_static"]
 html_copy_source = False
 html_show_sourcelink = False
 html_theme_options = {

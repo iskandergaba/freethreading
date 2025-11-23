@@ -66,6 +66,18 @@ def test_enumerate(backend):
     assert isinstance(workers, list)
 
 
+def test_active_children(backend):
+    initial_children = backend.active_children()
+
+    worker = backend.Worker(target=time.sleep, args=(0.1,))
+    worker.start()
+
+    children = backend.active_children()
+    assert len(children) >= len(initial_children)
+
+    worker.join()
+
+
 def test_worker_with_args(backend):
     worker = backend.Worker(target=task_with_args, args=(1, 2))
     assert worker is not None
@@ -190,11 +202,25 @@ def test_lock_acquire_timeout(backend):
     lock.release()
 
 
+def test_lock_acquire_negative_timeout(backend):
+    lock = backend.Lock()
+    result = lock.acquire(blocking=True, timeout=-1)
+    assert result
+    lock.release()
+
+
 def test_rlock_acquire_release(backend):
     lock = backend.RLock()
     assert lock.acquire()
     assert lock.acquire()
     lock.release()
+    lock.release()
+
+
+def test_rlock_acquire_negative_timeout(backend):
+    lock = backend.RLock()
+    result = lock.acquire(blocking=True, timeout=-0.5)
+    assert result
     lock.release()
 
 
@@ -256,6 +282,13 @@ def test_condition_acquire_release(backend):
     cond.release()
 
 
+def test_condition_acquire_negative_timeout(backend):
+    cond = backend.Condition()
+    result = cond.acquire(blocking=True, timeout=-0.5)
+    assert result
+    cond.release()
+
+
 def test_condition_context_manager(backend):
     cond = backend.Condition()
     with cond:
@@ -308,6 +341,12 @@ def test_condition_notify_with_count(backend):
     cond.release()
     assert cond.acquire()
     cond.release()
+
+
+def test_condition_notify_all(backend):
+    cond = backend.Condition()
+    with cond:
+        cond.notify_all()
 
 
 def test_event_is_set(backend):
@@ -479,6 +518,18 @@ def test_simple_queue_put_get(backend):
     q.put(42)
     result = q.get()
     assert result == 42
+
+
+def test_simple_queue_empty(backend):
+    q = backend.SimpleQueue()
+
+    assert q.empty()
+
+    q.put(42)
+    assert not q.empty()
+
+    q.get()
+    assert q.empty()
 
 
 def test_simple_queue_blocking_warnings(backend):

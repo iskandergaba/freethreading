@@ -1,5 +1,5 @@
-``freethreading`` — GIL-agnostic parallelism
-============================================
+``freethreading`` — Thread-first true parallelism
+=================================================
 
 |Codecov| |Docs| |CI Build|
 
@@ -8,13 +8,12 @@
 .. warning::
    This project is a work in progress and is not ready yet for production use.
 
-:mod:`freethreading` is thin layer that provides a unified `Global Interpreter Lock (GIL)
-<https://docs.python.org/3/glossary.html#term-global-interpreter-lock>`_ agnostic concurrency API
-that ensures true parallel execution of your code regardless of Python and uses `threads
-<https://en.wikipedia.org/wiki/Thread_(computing)>`_ instead of `processes
-<https://en.wikipedia.org/wiki/Process_(computing)>`_ whenever possible. It does so by automatically
-selecting :mod:`threading` for code execution when the GIL is disabled (i.e., free-threaded Python)
-and falling back to :mod:`multiprocessing` otherwise (i.e., standard Python).
+:mod:`freethreading` is a lightweight wrapper that provides a unified API for parallel execution in Python. It
+automatically uses :mod:`threading` on free-threaded Python builds (where the `Global Interpreter Lock (GIL)
+<https://docs.python.org/3/glossary.html#term-global-interpreter-lock>`_ is disabled) and falls back to
+:mod:`multiprocessing` on standard ones. This enables true parallelism across Python versions while preferring the
+efficiency of `threads <https://en.wikipedia.org/wiki/Thread_(computing)>`_ over `processes
+<https://en.wikipedia.org/wiki/Process_(computing)>`_ whenever possible.
 
 
 Installation
@@ -36,11 +35,11 @@ To install the latest development version, you can run:
 Quick Start
 -----------
 
-:mod:`freethreading` is an effortless drop-in replacement for pre-existing
+:mod:`freethreading` is an effortless drop-in replacement for *most* pre-existing
 :mod:`threading` and :mod:`multiprocessing` code. To achieve this, the module exposes only
 non-deprecated common functionality shared between both backends—which happens to be the majority
-of available features—while discarding any backend-specific APIs. Here's how to check which
-backend is being used:
+of available features—while discarding any backend-specific APIs. To get started, here's how
+to check which backend is being used:
 
 .. code-block:: pycon
 
@@ -49,22 +48,22 @@ backend is being used:
    'threading'
 
 :mod:`freethreading` remains, for the most part, consistent with the standard library. Here's
-an example of how to use :mod:`freethreading` wrapper classes as a drop-in replacement to those 
+an example of how to use :mod:`freethreading` wrapper classes as a drop-in replacement to those
 used by :mod:`threading` and :mod:`multiprocessing`:
 
 .. code-block:: pycon
 
    >>> # threading
    >>> # from queue import Queue
-   >>> # from threading import Lock, Event
+   >>> # from threading import Event, Lock
    >>>
    >>> # multiprocessing
-   >>> # from multiprocessing import Lock, Event, Queue
+   >>> # from multiprocessing import Event, Lock, Queue
    >>>
    >>> # freethreading
-   >>> from freethreading import Lock, Event, Queue
-   >>> lock = Lock()
+   >>> from freethreading import Event, Lock, Queue
    >>> event = Event()
+   >>> lock = Lock()
    >>> queue = Queue()
    >>> lock.acquire()
    True
@@ -77,7 +76,7 @@ used by :mod:`threading` and :mod:`multiprocessing`:
    >>> lock.release()
 
 :mod:`freethreading` wrapper functions merge as much functionality from both backends as
-possible to ensure a consistent behavior accross backends and smooth migration. Here's an
+possible to ensure a consistent behavior accross backends and a smooth migration. Here's an
 example of how to use them as a drop-in replacement to those used by :mod:`threading`
 and :mod:`multiprocessing`:
 
@@ -121,7 +120,7 @@ demonstrates their usage:
    >>>
    >>> def task():
    ...     print(f"Hello from {current_worker().name}!")
-   >>>
+   ...
    >>> # Using Worker (Thread or Process) to run a task
    >>> w = Worker(target=task, name="MyWorker")
    >>> w.start()
@@ -130,8 +129,9 @@ demonstrates their usage:
    >>>
    >>> # Using WorkerPoolExecutor (ThreadPoolExecutor or ProcessPoolExecutor) to run a task
    >>> with WorkerPoolExecutor(max_workers=2) as executor:
+   ...     # 'Hello from ThreadPoolExecutor-0_0!' or 'Hello from ForkProcess-2!'
    ...     future = executor.submit(task)
-   >>> # 'Hello from ThreadPoolExecutor-0_0!' or 'Hello from ForkProcess-2!'
+   >>>
    Hello from ThreadPoolExecutor-0_0!
 
 Let's compute factorials in parallel using :class:`~freethreading.WorkerPoolExecutor`.
