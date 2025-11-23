@@ -4,7 +4,6 @@ import importlib
 import sys
 import threading
 import time
-import warnings
 
 import pytest
 
@@ -155,23 +154,9 @@ def test_worker_join_timeout(backend):
     assert not worker.is_alive()
 
 
-def test_worker_pickling_warning(backend):
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
+def test_worker_pickling_exception(backend):
+    with pytest.raises(ValueError, match="must be picklable"):
         backend.Worker(target=lambda: None)
-        assert len(w) == 1
-        assert "not be picklable" in str(w[0].message)
-
-
-def test_worker_local_function_warning(backend):
-    def local_function():
-        pass
-
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        backend.Worker(target=local_function)
-        assert len(w) == 1
-        assert "not be picklable" in str(w[0].message)
 
 
 def test_lock_acquire_release(backend):
@@ -530,39 +515,6 @@ def test_simple_queue_empty(backend):
 
     q.get()
     assert q.empty()
-
-
-def test_simple_queue_blocking_warnings(backend):
-    q = backend.SimpleQueue()
-
-    if backend.get_backend() == "multiprocessing":
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            q.put(1, block=False)
-            assert len(w) == 1
-            assert "does not support" in str(w[0].message)
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            result = q.get(timeout=0.01)
-            assert len(w) == 1
-            assert "does not support" in str(w[0].message)
-            assert result == 1
-    else:
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            q.put(1, block=False)
-            assert len(w) == 0
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            q.put(2, timeout=0.01)
-            assert len(w) == 0
-
-        result1 = q.get(block=False)
-        result2 = q.get(timeout=0.01)
-        assert result1 == 1
-        assert result2 == 2
 
 
 def test_pool_executor_map(backend):

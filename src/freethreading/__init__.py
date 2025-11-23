@@ -45,7 +45,6 @@ Use module-level functions instead of lambdas or nested functions.
 
 import pickle
 import sys
-import warnings
 from multiprocessing.process import BaseProcess
 from threading import Thread
 from typing import Literal
@@ -828,10 +827,6 @@ class SimpleQueue:
     A simpler FIFO queue without task tracking or size limits.
     Uses :class:`queue.SimpleQueue` or :class:`multiprocessing.SimpleQueue`.
 
-    .. warning::
-       The multiprocessing backend does not support ``block`` and ``timeout``
-       parameters. Using them will issue a runtime warning and ignore the parameters.
-
     See Also
     --------
     Queue : Full-featured queue with task tracking
@@ -852,7 +847,7 @@ class SimpleQueue:
     def __init__(self):
         self._queue = _SimpleQueue()
 
-    def put(self, item, block=True, timeout=None):
+    def put(self, item):
         """
         Put an item into the queue.
 
@@ -860,59 +855,29 @@ class SimpleQueue:
         ----------
         item
             Item to add to the queue.
-        block : bool, default=True
-            If True, block until space is available (threading only).
-        timeout : float, optional
-            Maximum time to wait in seconds (threading only).
 
-        Warnings
-        --------
-        The multiprocessing backend ignores ``block`` and ``timeout`` parameters.
+        Notes
+        -----
+        This method always blocks until the item can be added, ensuring
+        consistent behavior across threading and multiprocessing backends.
         """
-        if _backend == "threading":
-            self._queue.put(item, block, timeout)  # type: ignore[call-arg]
-        else:
-            if not block or timeout is not None:
-                warnings.warn(
-                    "SimpleQueue with multiprocessing backend does not support "
-                    "block or timeout parameters. Arguments ignored.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-            self._queue.put(item)
+        self._queue.put(item)
 
-    def get(self, block=True, timeout=None):
+    def get(self):
         """
         Remove and return an item from the queue.
-
-        Parameters
-        ----------
-        block : bool, default=True
-            If True, block until an item is available (threading only).
-        timeout : float, optional
-            Maximum time to wait in seconds (threading only).
 
         Returns
         -------
         item
             The next item from the queue.
 
-        Warnings
-        --------
-        The multiprocessing backend ignores ``block`` and ``timeout`` parameters
-        and always blocks until an item is available.
+        Notes
+        -----
+        This method always blocks until an item is available, ensuring
+        consistent behavior across threading and multiprocessing backends.
         """
-        if _backend == "threading":
-            return self._queue.get(block, timeout)  # type: ignore[call-arg]
-        else:
-            if not block or timeout is not None:
-                warnings.warn(
-                    "SimpleQueue with multiprocessing backend does not support "
-                    "block or timeout parameters. Will block until item available.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-            return self._queue.get()
+        return self._queue.get()
 
     def empty(self):
         """
@@ -949,9 +914,13 @@ class Worker:
         Whether the worker is a daemon. Daemon workers are terminated when
         the program exits.
 
-    .. warning::
-       All arguments passed to workers must be picklable when using the
-       multiprocessing backend. Avoid lambdas and nested functions.
+    Raises
+    ------
+    ValueError
+        If target, args, or kwargs are not picklable. All arguments must be
+        picklable to ensure portability across threading and multiprocessing
+        backends. Use module-level functions instead of lambdas or nested
+        functions.
 
     See Also
     --------
@@ -985,14 +954,13 @@ class Worker:
 
         try:
             pickle.dumps((target, args, kwargs))
-        except (pickle.PicklingError, TypeError, AttributeError) as e:
-            warnings.warn(
-                f"Arguments may not be picklable: {e}. "
-                f"This will cause issues with multiprocessing backend. "
-                f"Use module-level functions instead of lambdas.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
+        except (AttributeError, TypeError, pickle.PicklingError) as e:
+            raise ValueError(
+                f"Worker arguments must be picklable for compatibility with "
+                f"multiprocessing backend. "
+                f"Error: {e}. "
+                f"Use module-level functions instead of lambdas or nested functions."
+            ) from e
 
         self._worker = _Worker(
             group=group,
