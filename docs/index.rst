@@ -130,7 +130,7 @@ Contents
    :maxdepth: 2
 
    usage
-   caveats
+   considerations
    api
 
 

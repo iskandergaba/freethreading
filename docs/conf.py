@@ -26,6 +26,7 @@ extensions = ["sphinx.ext.napoleon", "sphinx.ext.intersphinx", "autoapi.extensio
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "pytest": ("https://docs.pytest.org/en/stable", None),
 }
 
 # Options for AutoAPI
