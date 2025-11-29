@@ -42,7 +42,6 @@ autoapi_options = [
     "show-inheritance",
     "show-module-summary",
 ]
-autoapi_member_order = "bysource"
 autoapi_keep_files = True
 autoapi_add_toctree_entry = False
 

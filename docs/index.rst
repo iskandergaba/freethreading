@@ -131,7 +131,7 @@ Contents
 
    usage
    considerations
-   api
+   API Reference <generated/freethreading/index>
 
 
 .. |Codecov| image:: https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=D5F3PKSOEK
