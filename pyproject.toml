@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "freethreading"
 version = "0.1.0"
-description = "Automatic selection between threading and multiprocessing based on Python's GIL status"
+description = "Thread-first true parallelism"
 license = "MIT"
 readme = "README.md"
 authors = [
@@ -29,11 +29,10 @@ dev = [
     "ruff~=0.14.0",
     "pytest~=9.0.0",
     "pytest-cov~=7.0.0",
+    "sphinx-autobuild~=2024.10.0",
 ]
 docs = [
-    "sphinx~=8.2.0",
     "sphinx-autoapi~=3.6.0",
-    "sphinx-autobuild~=2025.08.0",
     "python-docs-theme~=2025.10"
 ]
 
