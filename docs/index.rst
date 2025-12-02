@@ -1,7 +1,7 @@
 ``freethreading`` — Thread-first true parallelism
 =================================================
 
-|Codecov| |Docs| |CI Build|
+|CI Build| |Codecov| |Docs|
 
 --------------------------------------------
 
