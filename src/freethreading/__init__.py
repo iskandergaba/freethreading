@@ -156,6 +156,11 @@ class Barrier:
         -------
         int
             The arrival index (0 to parties-1).
+
+        Raises
+        ------
+        BrokenBarrierError
+            If the barrier is broken or reset.
         """
         return self._barrier.wait(timeout)
 
@@ -236,7 +241,14 @@ class BoundedSemaphore:
         return self._semaphore.acquire(blocking, timeout)
 
     def release(self):
-        """Release the semaphore, incrementing the counter."""
+        """
+        Release the semaphore, incrementing the counter.
+
+        Raises
+        ------
+        ValueError
+            If released more times than acquired.
+        """
         self._semaphore.release()
 
     def __enter__(self):
@@ -496,7 +508,16 @@ class Lock:
         return self._lock.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
-        """Release the lock."""
+        """
+        Release the lock.
+
+        Raises
+        ------
+        RuntimeError
+            When invoked on an unlocked lock (threading backend).
+        ValueError
+            When invoked on an unlocked lock (multiprocessing backend).
+        """
         self._lock.release()
 
     def locked(self):
@@ -726,7 +747,18 @@ class RLock:
         return self._lock.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
-        """Release the lock, decrementing the recursion level."""
+        """
+        Release the lock, decrementing the recursion level.
+
+        Raises
+        ------
+        RuntimeError
+            When invoked on an unlocked lock or by a worker other than the owner
+            (threading backend).
+        AssertionError
+            When invoked on an unlocked lock or by a worker other than the owner
+            (multiprocessing backend).
+        """
         self._lock.release()
 
     def __enter__(self):
