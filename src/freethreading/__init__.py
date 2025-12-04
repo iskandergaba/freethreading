@@ -169,38 +169,17 @@ class Barrier:
 
     @property
     def parties(self):
-        """
-        The number of workers required to pass the barrier.
-
-        Returns
-        -------
-        int
-            Number of parties.
-        """
+        """The number of workers required to trip the barrier."""
         return self._barrier.parties
 
     @property
     def n_waiting(self):
-        """
-        The number of workers currently waiting at the barrier.
-
-        Returns
-        -------
-        int
-            Number of waiting workers.
-        """
+        """The number of workers currently waiting at the barrier."""
         return self._barrier.n_waiting
 
     @property
     def broken(self):
-        """
-        True if the barrier is in a broken state.
-
-        Returns
-        -------
-        bool
-            True if broken, False otherwise.
-        """
+        """Whether the barrier is in a broken state."""
         return self._barrier.broken
 
 
@@ -999,36 +978,20 @@ class Worker:
 
     @property
     def name(self):
-        """
-        Worker name.
-
-        Returns
-        -------
-        str
-            The worker's name.
-        """
+        """The worker's name."""
         return self._worker.name
 
     @name.setter
     def name(self, value):
-        """Set the worker name."""
         self._worker.name = value
 
     @property
     def daemon(self):
-        """
-        Daemon status.
-
-        Returns
-        -------
-        bool
-            True if the worker is a daemon.
-        """
+        """Whether the worker is a daemon."""
         return self._worker.daemon
 
     @daemon.setter
     def daemon(self, value):
-        """Set the daemon status."""
         self._worker.daemon = value
 
 
