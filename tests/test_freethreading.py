@@ -260,6 +260,27 @@ def test_bounded_semaphore_context_manager_exception(backend):
     assert not sem.acquire(blocking=False) or sem.release() is None
 
 
+def test_condition_no_lock(backend):
+    cond = backend.Condition()
+    with cond:
+        assert cond is not None
+
+
+def test_condition_with_lock(backend):
+    lock = backend.Lock()
+    cond = backend.Condition(lock)
+    with cond:
+        assert cond is not None
+
+
+def test_condition_with_rlock(backend):
+    rlock = backend.RLock()
+    cond = backend.Condition(rlock)
+    with cond:
+        with cond:
+            assert cond is not None
+
+
 def test_condition_acquire_release(backend):
     cond = backend.Condition()
     acquired = cond.acquire()

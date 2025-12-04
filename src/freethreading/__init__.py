@@ -283,7 +283,9 @@ class Condition:
     """
 
     def __init__(self, lock=None):
-        self._condition = _Condition(lock)
+        self._condition = _Condition(
+            lock._lock if isinstance(lock, (Lock, RLock)) else None  # type: ignore[arg-type]
+        )
 
     def acquire(self, blocking=True, timeout=None):
         """
