@@ -37,7 +37,7 @@ roman-numerals==3.1.0 ; python_full_version >= '3.12'
     # via sphinx
 snowballstemmer==3.0.1 ; python_full_version >= '3.12'
     # via sphinx
-sphinx==9.0.1 ; python_full_version >= '3.12'
+sphinx==9.0.4 ; python_full_version >= '3.12'
     # via
     #   python-docs-theme
     #   sphinx-autoapi
@@ -54,5 +54,5 @@ sphinxcontrib-qthelp==2.0.0 ; python_full_version >= '3.12'
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0 ; python_full_version >= '3.12'
     # via sphinx
-urllib3==2.5.0 ; python_full_version >= '3.12'
+urllib3==2.6.1 ; python_full_version >= '3.12'
     # via requests
