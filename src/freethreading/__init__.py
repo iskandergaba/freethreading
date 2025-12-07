@@ -112,9 +112,8 @@ class Barrier:
 
     See Also
     --------
-    Event : Event signaling between workers
-    threading.Barrier : Threading implementation
-    multiprocessing.Barrier : Multiprocessing implementation
+    threading.Barrier : :mod:`threading` implementation.
+    multiprocessing.Barrier : :mod:`multiprocessing` implementation.
 
     Examples
     --------
@@ -124,11 +123,19 @@ class Barrier:
     ...     print(f"Worker {i} reached barrier")
     ...     barrier.wait()
     ...     print(f"Worker {i} past barrier")
+    ...
     >>> workers = [Worker(target=synchronized_task, args=(i,)) for i in range(3)]
     >>> for w in workers:
     ...     w.start()
     >>> for w in workers:
     ...     w.join()
+    ...
+    Worker 0 reached barrier
+    Worker 1 reached barrier
+    Worker 2 reached barrier
+    Worker 0 past barrier
+    Worker 1 past barrier
+    Worker 2 past barrier
     """
 
     def __init__(self, parties, action=None, timeout=None):
@@ -150,7 +157,7 @@ class Barrier:
 
         Raises
         ------
-        BrokenBarrierError
+        threading.BrokenBarrierError
             If the barrier is broken or reset.
         """
         return self._barrier.wait(timeout)
@@ -181,10 +188,10 @@ class Barrier:
 
 class BoundedSemaphore:
     """
-    Unified BoundedSemaphore interface.
+    A semaphore that prevents releasing more times than acquired.
 
-    A bounded semaphore that prevents the counter from exceeding its initial value.
-    Uses :class:`threading.BoundedSemaphore` or
+    A bounded semaphore guards against excessive releases by raising an error if
+    released more times than acquired. Uses :class:`threading.BoundedSemaphore` or
     :class:`multiprocessing.BoundedSemaphore` depending on backend.
 
     Parameters
@@ -194,20 +201,20 @@ class BoundedSemaphore:
 
     See Also
     --------
-    Semaphore : Standard semaphore without upper bound
-    threading.BoundedSemaphore : Threading implementation
-    multiprocessing.BoundedSemaphore : Multiprocessing implementation
+    threading.BoundedSemaphore : :mod:`threading` implementation.
+    multiprocessing.BoundedSemaphore : :mod:`multiprocessing` implementation.
 
     Examples
     --------
     >>> from freethreading import BoundedSemaphore
-    >>> sem = BoundedSemaphore(2)
-    >>> sem.acquire()
-    True
+    >>> sem = BoundedSemaphore(1)
     >>> sem.acquire()
     True
     >>> sem.release()
     >>> sem.release()
+    Traceback (most recent call last):
+        ...
+    ValueError: Semaphore released too many times
     """
 
     def __init__(self, value=1):
@@ -215,19 +222,20 @@ class BoundedSemaphore:
 
     def acquire(self, blocking=True, timeout=None):
         """
-        Acquire the semaphore.
+        Acquire the semaphore, decrementing the counter.
 
         Parameters
         ----------
         blocking : bool, default=True
-            If True, block until the semaphore can be acquired.
+            If True, block until the semaphore can be acquired. If False, return
+            immediately.
         timeout : float, optional
-            Maximum time to wait in seconds. None means wait forever.
+            Maximum time to wait in seconds when blocking. None means wait forever.
 
         Returns
         -------
         bool
-            True if acquired, False if timeout occurred.
+            True if acquired, False if not acquired (non-blocking or timeout).
         """
         return self._semaphore.acquire(blocking, timeout)
 
@@ -253,10 +261,11 @@ class BoundedSemaphore:
 
 class Condition:
     """
-    Unified Condition variable interface.
+    Condition variable for worker coordination.
 
-    Allows workers to wait for a specific condition to become true.
-    Uses :class:`threading.Condition` or :class:`multiprocessing.Condition`.
+    A condition variable allows one or more workers to wait until notified by another
+    worker. Uses :class:`threading.Condition` or :class:`multiprocessing.Condition`
+    depending on backend.
 
     Parameters
     ----------
@@ -265,24 +274,34 @@ class Condition:
 
     See Also
     --------
-    Lock : Mutual exclusion lock
-    RLock : Reentrant lock
-    threading.Condition : Threading implementation
-    multiprocessing.Condition : Multiprocessing implementation
+    threading.Condition : :mod:`threading` implementation.
+    multiprocessing.Condition : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import Condition, Worker
+    >>> from freethreading import Condition, Queue, Worker, current_worker
+    >>>
     >>> condition = Condition()
-    >>> items = []
-    >>> def producer():
+    >>> queue = Queue()
+    >>> def producer(data):
     ...     with condition:
-    ...         items.append("item")
+    ...         queue.put(data)
+    ...         print(f"'{current_worker().name}' sent: {data}")
     ...         condition.notify()
+    ...
     >>> def consumer():
     ...     with condition:
     ...         condition.wait()
-    ...         item = items.pop() if items else None
+    ...         print(f"'{current_worker().name}' received: {queue.get()}")
+    ...
+    >>> c = Worker(name="Consumer", target=consumer)
+    >>> p = Worker(name="Producer", target=producer, args=(42,))
+    >>> c.start()
+    >>> p.start()
+    >>> c.join()
+    >>> p.join()
+    'Producer' sent: 42
+    'Consumer' received: 42
     """
 
     def __init__(self, lock=None):
@@ -297,14 +316,14 @@ class Condition:
         Parameters
         ----------
         blocking : bool, default=True
-            If True, block until the lock can be acquired.
+            If True, block until the lock can be acquired. If False, return immediately.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds when blocking. None means wait forever.
 
         Returns
         -------
         bool
-            True if acquired, False if timeout occurred.
+            True if acquired, False if not acquired (non-blocking or timeout).
         """
         if _backend == "threading":
             if timeout is None or timeout < 0:
@@ -315,22 +334,38 @@ class Condition:
         return self._condition.acquire(blocking, timeout)  # type: ignore[call-arg]
 
     def release(self):
-        """Release the underlying lock."""
+        """
+        Release the underlying lock.
+
+        Raises
+        ------
+        RuntimeError
+            When the lock is not held (threading backend).
+        AssertionError
+            When the lock is not held (multiprocessing backend).
+        """
         self._condition.release()
 
     def wait(self, timeout=None):
         """
-        Wait until notified or timeout occurs.
+        Wait until notified or a timeout occurs.
 
         Parameters
         ----------
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds. None means wait forever.
 
         Returns
         -------
         bool
-            True unless timeout occurred.
+            True if notified, False if timeout occurred.
+
+        Raises
+        ------
+        RuntimeError
+            When the lock is not held (threading backend).
+        AssertionError
+            When the lock is not held (multiprocessing backend).
         """
         return self._condition.wait(timeout)
 
@@ -343,12 +378,19 @@ class Condition:
         predicate : callable
             Function that returns a boolean value.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds. None means wait forever.
 
         Returns
         -------
         bool
-            The predicate result.
+            The last value returned by the predicate.
+
+        Raises
+        ------
+        RuntimeError
+            When the lock is not held (threading backend).
+        AssertionError
+            When the lock is not held (multiprocessing backend).
         """
         return self._condition.wait_for(predicate, timeout)
 
@@ -360,11 +402,27 @@ class Condition:
         ----------
         n : int, default=1
             Number of workers to wake up.
+
+        Raises
+        ------
+        RuntimeError
+            When the lock is not held (threading backend).
+        AssertionError
+            When the lock is not held (multiprocessing backend).
         """
         self._condition.notify(n)
 
     def notify_all(self):
-        """Wake up all workers waiting on this condition."""
+        """
+        Wake up all workers waiting on this condition.
+
+        Raises
+        ------
+        RuntimeError
+            When the lock is not held (threading backend).
+        AssertionError
+            When the lock is not held (multiprocessing backend).
+        """
         self._condition.notify_all()
 
     def __enter__(self):
@@ -386,28 +444,32 @@ class Event:
 
     See Also
     --------
-    Barrier : Synchronization barrier for coordinating workers
-    threading.Event : Threading implementation
-    multiprocessing.Event : Multiprocessing implementation
+    threading.Event : :mod:`threading` implementation.
+    multiprocessing.Event : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import Event, Worker
+    >>> from freethreading import Event, Worker, current_worker
+    >>>
     >>> event = Event()
-    >>> def waiter():
+    >>> def wait():
+    ...     print(f"'{current_worker().name}': waiting for notification")
     ...     event.wait()
-    ...     print("Event set!")
-    >>> def setter():
-    ...     import time
-    ...     time.sleep(0.1)
+    ...     print(f"'{current_worker().name}': received notification")
+    ...
+    >>> def notify():
     ...     event.set()
-    >>> w1 = Worker(target=waiter)
-    >>> w2 = Worker(target=setter)
-    >>> w1.start()
-    >>> w2.start()
-    >>> w1.join()
-    >>> w2.join()
-    Event set!
+    ...     print(f"'{current_worker().name}': sent notification")
+    ...
+    >>> waiter = Worker(name="Waiter", target=wait)
+    >>> notifier = Worker(name="Notifier", target=notify)
+    >>> waiter.start()
+    >>> notifier.start()
+    >>> waiter.join()
+    >>> notifier.join()
+    'Waiter': waiting for notification
+    'Notifier': sent notification
+    'Waiter': received notification
     """
 
     def __init__(self):
@@ -415,7 +477,7 @@ class Event:
 
     def is_set(self):
         """
-        Return True if the internal flag is set.
+        Return True if and only if the internal flag is set.
 
         Returns
         -------
@@ -439,36 +501,45 @@ class Event:
         Parameters
         ----------
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds. None means wait forever.
 
         Returns
         -------
         bool
-            True if flag is set, False if timeout occurred.
+            True if the flag is set, False if a timeout occurred.
         """
         return self._event.wait(timeout)
 
 
 class Lock:
     """
-    Unified Lock interface.
+    Mutual exclusion lock for worker synchronization.
 
-    A mutual exclusion lock. Uses :class:`threading.Lock` or
-    :class:`multiprocessing.Lock` depending on backend.
+    A lock ensures only one worker enters a critical section at a time. Uses
+    :class:`threading.Lock` or :class:`multiprocessing.Lock` depending on backend.
 
     See Also
     --------
-    RLock : Reentrant lock that can be acquired multiple times by the same worker
-    threading.Lock : Threading implementation
-    multiprocessing.Lock : Multiprocessing implementation
+    threading.Lock : :mod:`threading` implementation.
+    multiprocessing.Lock : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import Lock
+    >>> from freethreading import Lock, Worker, current_worker
+    >>>
     >>> lock = Lock()
-    >>> with lock:
-    ...     # Critical section - only one worker at a time
-    ...     pass
+    >>> def critical():
+    ...     with lock:
+    ...         print(f"'{current_worker().name}': acquired lock")
+    ...
+    >>> workers = [Worker(name=f"Worker-{i}", target=critical) for i in range(2)]
+    >>> for w in workers:
+    ...     w.start()
+    >>> for w in workers:
+    ...     w.join()
+    ...
+    'Worker-0': acquired lock
+    'Worker-1': acquired lock
     """
 
     def __init__(self):
@@ -481,14 +552,15 @@ class Lock:
         Parameters
         ----------
         blocking : bool, default=True
-            If True, block until the lock can be acquired.
+            If True, block until the lock can be acquired. Otherwise, return
+            immediately.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds when blocking. None means wait forever.
 
         Returns
         -------
         bool
-            True if acquired, False if timeout occurred.
+            True if acquired, False if not acquired (non-blocking or timeout).
         """
         if _backend == "threading":
             if timeout is None or timeout < 0:
@@ -540,10 +612,10 @@ class Lock:
 
 class Queue:
     """
-    Unified Queue interface for worker communication.
+    FIFO queue for worker communication.
 
-    A FIFO queue supporting task tracking with :meth:`task_done` and :meth:`join`.
-    Uses :class:`queue.Queue` or :class:`multiprocessing.JoinableQueue`.
+    A queue supporting task tracking with :meth:`task_done` and :meth:`join`. Uses
+    :class:`queue.Queue` or :class:`multiprocessing.JoinableQueue` depending on backend.
 
     Parameters
     ----------
@@ -552,28 +624,38 @@ class Queue:
 
     See Also
     --------
-    SimpleQueue : Simpler queue without task tracking
-    queue.Queue : Threading implementation
-    multiprocessing.JoinableQueue : Multiprocessing implementation
+    queue.Queue : :mod:`threading` implementation.
+    multiprocessing.JoinableQueue : :mod:`multiprocessing` implementation.
 
     Examples
     --------
     >>> from freethreading import Queue, Worker
-    >>> q = Queue()
-    >>> def worker(q):
+    >>>
+    >>> queue = Queue()
+    >>> def producer():
+    ...     for value in range(3):
+    ...         queue.put(value)
+    ...     queue.put(None)  # Sentinel marks completion
+    ...
+    >>> def consumer():
     ...     while True:
-    ...         item = q.get()
+    ...         item = queue.get()
     ...         if item is None:
-    ...             q.task_done()
+    ...             queue.task_done()
     ...             break
-    ...         # Process item
-    ...         q.task_done()
-    >>> q.put("item1")
-    >>> q.put(None)  # Sentinel
-    >>> w = Worker(target=worker, args=(q,))
-    >>> w.start()
-    >>> q.join()  # Wait for all tasks
-    >>> w.join()
+    ...         print(f"Processing {item}")
+    ...         queue.task_done()
+    ...
+    >>> producer_worker = Worker(name="Producer", target=producer)
+    >>> consumer_worker = Worker(name="Consumer", target=consumer)
+    >>> producer_worker.start()
+    >>> consumer_worker.start()
+    >>> queue.join()
+    >>> producer_worker.join()
+    >>> consumer_worker.join()
+    Processing 0
+    Processing 1
+    Processing 2
     """
 
     def __init__(self, maxsize=0):
@@ -588,9 +670,14 @@ class Queue:
         item
             Item to add to the queue.
         block : bool, default=True
-            If True, block until space is available.
+            If True, block until space is available. Otherwise, return immediately.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds when blocking. None means wait forever.
+
+        Raises
+        ------
+        queue.Full
+            If the queue is full and non-blocking or timeout occurred.
         """
         self._queue.put(item, block=block, timeout=timeout)
 
@@ -601,19 +688,31 @@ class Queue:
         Parameters
         ----------
         block : bool, default=True
-            If True, block until an item is available.
+            If True, block until an item is available. Otherwise, return immediately.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds when blocking. None means wait forever.
 
         Returns
         -------
         item
             The next item from the queue.
+
+        Raises
+        ------
+        queue.Empty
+            If the queue is empty and non-blocking or timeout occurred.
         """
         return self._queue.get(block=block, timeout=timeout)
 
     def task_done(self):
-        """Indicate that a formerly enqueued task is complete."""
+        """
+        Indicate that a formerly enqueued task is complete.
+
+        Raises
+        ------
+        ValueError
+            If called more times than there were items placed in the queue.
+        """
         self._queue.task_done()
 
     def join(self):
@@ -688,26 +787,37 @@ class Queue:
 
 class RLock:
     """
-    Unified RLock (reentrant lock) interface.
+    Reentrant lock for worker synchronization.
 
-    A lock that can be acquired multiple times by the same worker.
-    Uses :class:`threading.RLock` or :class:`multiprocessing.RLock`.
+    A reentrant lock can be acquired multiple times by the same worker without blocking.
+    The lock must be released once for each time it was acquired. Uses
+    :class:`threading.RLock` or :class:`multiprocessing.RLock` depending on backend.
 
     See Also
     --------
-    Lock : Standard mutual exclusion lock
-    threading.RLock : Threading implementation
-    multiprocessing.RLock : Multiprocessing implementation
+    threading.RLock : :mod:`threading` implementation.
+    multiprocessing.RLock : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import RLock
+    >>> from freethreading import RLock, Worker, current_worker
+    >>>
     >>> rlock = RLock()
-    >>> def recursive_function(n):
+    >>> def countdown(n):
     ...     with rlock:
     ...         if n > 0:
-    ...             recursive_function(n - 1)
-    >>> recursive_function(5)
+    ...             print(f"'{current_worker().name}': {n}...")
+    ...             countdown(n - 1)
+    ...         else:
+    ...             print(f"'{current_worker().name}': go!")
+    ...
+    >>> worker = Worker(name="Worker-0", target=countdown, args=(3,))
+    >>> worker.start()
+    >>> worker.join()
+    'Worker-0': 3...
+    'Worker-0': 2...
+    'Worker-0': 1...
+    'Worker-0': go!
     """
 
     def __init__(self):
@@ -720,14 +830,15 @@ class RLock:
         Parameters
         ----------
         blocking : bool, default=True
-            If True, block until the lock can be acquired.
+            If True, block until the lock can be acquired. Otherwise, return
+            immediately.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds when blocking. None means wait forever.
 
         Returns
         -------
         bool
-            True if acquired, False if timeout occurred.
+            True if acquired, False if not acquired (non-blocking or timeout).
         """
         if _backend == "threading":
             if timeout is None or timeout < 0:
@@ -763,11 +874,11 @@ class RLock:
 
 class Semaphore:
     """
-    Unified Semaphore interface.
+    Counting semaphore for limiting concurrent access.
 
     A semaphore manages an internal counter decremented by :meth:`acquire` calls
     and incremented by :meth:`release` calls. Uses :class:`threading.Semaphore`
-    or :class:`multiprocessing.Semaphore`.
+    or :class:`multiprocessing.Semaphore` depending on backend.
 
     Parameters
     ----------
@@ -776,18 +887,29 @@ class Semaphore:
 
     See Also
     --------
-    BoundedSemaphore : Semaphore with upper bound protection
-    threading.Semaphore : Threading implementation
-    multiprocessing.Semaphore : Multiprocessing implementation
+    threading.Semaphore : :mod:`threading` implementation.
+    multiprocessing.Semaphore : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import Semaphore, Worker
-    >>> sem = Semaphore(3)  # Allow 3 concurrent accesses
+    >>> from freethreading import Semaphore, Worker, current_worker
+    >>>
+    >>> sem = Semaphore(2)
     >>> def limited_resource():
     ...     with sem:
-    ...         # Only 3 workers can be here at once
-    ...         pass
+    ...         print(f"'{current_worker().name}': in restricted section")
+    ...
+    >>> workers = [
+    ...     Worker(name=f"Worker-{i}", target=limited_resource) for i in range(3)
+    ... ]
+    >>> for w in workers:
+    ...     w.start()
+    >>> for w in workers:
+    ...     w.join()
+    ...
+    'Worker-0': in restricted section
+    'Worker-1': in restricted section
+    'Worker-2': in restricted section
     """
 
     def __init__(self, value=1):
@@ -795,19 +917,20 @@ class Semaphore:
 
     def acquire(self, blocking=True, timeout=None):
         """
-        Acquire the semaphore.
+        Acquire the semaphore, decrementing the counter.
 
         Parameters
         ----------
         blocking : bool, default=True
-            If True, block until the semaphore can be acquired.
+            If True, block until the semaphore can be acquired. Otherwise, return
+            immediately.
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds when blocking. None means wait forever.
 
         Returns
         -------
         bool
-            True if acquired, False if timeout occurred.
+            True if acquired, False if not acquired (non-blocking or timeout).
         """
         return self._semaphore.acquire(blocking, timeout)
 
@@ -826,25 +949,34 @@ class Semaphore:
 
 class SimpleQueue:
     """
-    Unified SimpleQueue interface.
+    Lightweight FIFO queue for worker communication.
 
-    A simpler FIFO queue without task tracking or size limits.
-    Uses :class:`queue.SimpleQueue` or :class:`multiprocessing.SimpleQueue`.
+    A simpler queue without task tracking or size limits. Uses
+    :class:`queue.SimpleQueue` or :class:`multiprocessing.SimpleQueue` depending
+    on backend.
 
     See Also
     --------
-    Queue : Full-featured queue with task tracking
-    queue.SimpleQueue : Threading implementation
-    multiprocessing.SimpleQueue : Multiprocessing implementation
+    queue.SimpleQueue : :mod:`threading` implementation.
+    multiprocessing.SimpleQueue : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import SimpleQueue
-    >>> sq = SimpleQueue()
-    >>> sq.put("Hello")
-    >>> sq.get()
-    'Hello'
-    >>> sq.empty()
+    >>> from freethreading import SimpleQueue, Worker
+    >>>
+    >>> queue = SimpleQueue()
+    >>> def fill_queue():
+    ...     queue.put("hello")
+    ...     queue.put("world")
+    ...
+    >>> worker = Worker(target=fill_queue)
+    >>> worker.start()
+    >>> queue.get()
+    'hello'
+    >>> queue.get()
+    'world'
+    >>> worker.join()
+    >>> queue.empty()
     True
     """
 
@@ -897,10 +1029,10 @@ class SimpleQueue:
 
 class Worker:
     """
-    Unified Worker interface (Thread or Process).
+    Thread or process for parallel execution.
 
-    Represents an activity that runs in a separate thread or process.
-    Uses :class:`threading.Thread` or :class:`multiprocessing.Process`.
+    Represents an activity that runs in a separate thread or process. Uses
+    :class:`threading.Thread` or :class:`multiprocessing.Process` depending on backend.
 
     Parameters
     ----------
@@ -928,19 +1060,20 @@ class Worker:
 
     See Also
     --------
-    threading.Thread : Threading implementation
-    multiprocessing.Process : Multiprocessing implementation
-    WorkerPoolExecutor : High-level interface for managing worker pools
+    threading.Thread : :mod:`threading` implementation.
+    multiprocessing.Process : :mod:`multiprocessing` implementation.
 
     Examples
     --------
-    >>> from freethreading import Worker
-    >>> def task(name):
-    ...     print(f"Hello from {name}")
-    >>> w = Worker(target=task, args=("Worker-1",))
-    >>> w.start()
-    >>> w.join()
-    Hello from Worker-1
+    >>> from freethreading import Worker, current_worker
+    >>>
+    >>> def greet():
+    ...     print(f"Hello from '{current_worker().name}'")
+    ...
+    >>> worker = Worker(name="Worker", target=greet)
+    >>> worker.start()
+    >>> worker.join()
+    Hello from 'Worker'
     """
 
     def __init__(
@@ -976,7 +1109,16 @@ class Worker:
         )
 
     def start(self):
-        """Start the worker's activity."""
+        """
+        Start the worker's activity.
+
+        Raises
+        ------
+        RuntimeError
+            If called more than once (threading backend).
+        AssertionError
+            If called more than once (multiprocessing backend).
+        """
         self._worker.start()
 
     def join(self, timeout=None):
@@ -986,7 +1128,14 @@ class Worker:
         Parameters
         ----------
         timeout : float, optional
-            Maximum time to wait in seconds.
+            Maximum time to wait in seconds. None means wait forever.
+
+        Raises
+        ------
+        RuntimeError
+            If called before start or on the current worker (threading backend).
+        AssertionError
+            If called before start (multiprocessing backend).
         """
         self._worker.join(timeout)
 
@@ -1037,9 +1186,8 @@ class WorkerPoolExecutor:
 
     See Also
     --------
-    Worker : Lower-level worker interface
-    concurrent.futures.ThreadPoolExecutor : Threading implementation
-    concurrent.futures.ProcessPoolExecutor : Multiprocessing implementation
+    concurrent.futures.ThreadPoolExecutor : Thread pool executor.
+    concurrent.futures.ProcessPoolExecutor : Process pool executor.
 
     Examples
     --------
@@ -1086,7 +1234,7 @@ class WorkerPoolExecutor:
         *iterables
             Iterables to map over.
         timeout : float, optional
-            Maximum time to wait for results.
+            Maximum time to wait for results. None means no limit.
         chunksize : int, default=1
             Size of chunks for multiprocessing.
 
@@ -1094,6 +1242,11 @@ class WorkerPoolExecutor:
         -------
         iterator
             Iterator over results.
+
+        Raises
+        ------
+        TimeoutError
+            If the entire result iterator could not be generated before the timeout.
         """
         return self._executor.map(fn, *iterables, timeout=timeout, chunksize=chunksize)
 
@@ -1127,19 +1280,13 @@ def active_children() -> list[Thread] | list[BaseProcess]:
     -------
     list of Thread | BaseProcess
         List of child thread or process objects currently alive, excluding the
-        current worker. Each object provides common attributes: ``name``, ``daemon``,
-        ``ident``, and methods: ``is_alive()``, ``join()``, ``start()``, ``run()``.
+        current worker.
 
     See Also
     --------
-    active_count : Get the count of active workers
+    active_count : Get the count of all active workers
     current_worker : Get the current worker
-    enumerate : Get all workers including current
-
-    Notes
-    -----
-    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
-    are also available but not portable across backends.
+    enumerate : Get a list of all workers
 
     Examples
     --------
@@ -1157,33 +1304,35 @@ def active_children() -> list[Thread] | list[BaseProcess]:
 
 def active_count() -> int:
     """
-    Return the number of currently active :class:`Worker` objects.
+    Return the number of currently active workers.
 
     Returns
     -------
     int
-        Number of :class:`Worker` objects currently running.
+        Number of currently running workers.
 
     See Also
     --------
-    enumerate : Return a list of all active :class:`Worker` objects
-    current_worker : Get the current :class:`Worker` object
+    current_worker : Get the current worker
+    enumerate : Get a list of all workers
 
     Notes
     -----
-    This counts all :class:`Worker` objects (threads or processes) that have
-    been started but not yet finished.
+    This counts all workers (threads or processes) that have been started but not yet
+    finished.
 
     Examples
     --------
-    >>> from freethreading import active_count, Worker
-    >>> def task():
-    ...     pass
-    >>> initial = active_count()
-    >>> w = Worker(target=task)
-    >>> w.start()
-    >>> active_count() >= initial + 1
-    True
+    >>> from freethreading import Worker, active_count
+    >>>
+    >>> def busy_wait():
+    ...     while True:
+    ...         pass
+    ...
+    >>> daemon = Worker(target=busy_wait, name="Daemon", daemon=True) # Daemon worker
+    >>> daemon.start()
+    >>> active_count()  # Main worker + our worker
+    2
     """
     return _active_count()
 
@@ -1196,25 +1345,17 @@ def current_worker() -> Thread | BaseProcess:
     -------
     Thread | BaseProcess
         The underlying thread or process object corresponding to the caller.
-        Provides common attributes: ``name``, ``daemon``, ``ident``,
-        and methods: ``is_alive()``, ``join()``, ``start()``, ``run()``.
 
     See Also
     --------
+    active_count : Get the count of all active workers
     get_ident : Get the identifier of the current worker
-    active_count : Get the number of active workers
-
-    Notes
-    -----
-    Backend-specific attributes like ``pid`` (processes) or ``native_id`` (threads)
-    are also available but not portable across backends.
 
     Examples
     --------
     >>> from freethreading import current_worker
-    >>> worker = current_worker()
-    >>> print(worker.name)
-    MainThread
+    >>> current_worker().name # 'MainThread' or 'MainProcess'
+    'MainThread'
     """
     return _current_worker()
 
@@ -1230,10 +1371,9 @@ def get_backend() -> Literal["threading", "multiprocessing"]:
 
     Examples
     --------
-    >>> import freethreading
-    >>> backend = freethreading.get_backend()
-    >>> print(f"Using {backend} backend")
-    Using multiprocessing backend
+    >>> from freethreading import get_backend
+    >>> get_backend()  # 'threading' or 'multiprocessing' depending on your Python build
+    'threading'
     """
     return _backend
 
@@ -1245,11 +1385,11 @@ def get_ident() -> int:
     Returns
     -------
     int
-        Thread identifier or process ID of the current :class:`Worker`.
+        Thread identifier or process ID of the current worker.
 
     See Also
     --------
-    current_worker : Get the current Worker object
+    current_worker : Get the current worker
 
     Notes
     -----
@@ -1274,15 +1414,13 @@ def enumerate() -> list[Thread] | list[BaseProcess]:
     -------
     list of Thread | BaseProcess
         List of all underlying thread or process objects currently alive,
-        including the current worker. Each object provides common attributes:
-        ``name``, ``daemon``, ``ident``, and methods: ``is_alive()``, ``join()``,
-        ``start()``, ``run()``.
+        including the current worker.
 
     See Also
     --------
     current_worker : Get the current worker
-    active_children : Get child workers
-    active_count : Get the count of active workers
+    active_children : Get a list of all workers, excluding the current one
+    active_count : Get the count of all active workers
 
     Notes
     -----
@@ -1291,14 +1429,16 @@ def enumerate() -> list[Thread] | list[BaseProcess]:
 
     Examples
     --------
-    >>> from freethreading import enumerate, Worker
-    >>> def task():
-    ...     pass
-    >>> w = Worker(target=task)
-    >>> w.start()
-    >>> workers = enumerate()
-    >>> len(workers) >= 2  # At least main + our worker
-    True
+    >>> from freethreading import Worker, enumerate
+    >>>
+    >>> def busy_wait():
+    ...     while True:
+    ...         pass
+    ...
+    >>> daemon = Worker(target=busy_wait, name="Daemon", daemon=True) # Daemon worker
+    >>> daemon.start()
+    >>> len(enumerate())  # Main worker + our worker
+    2
     """
     return _enumerate()
 
