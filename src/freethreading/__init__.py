@@ -1,46 +1,37 @@
 """
-Unified concurrency API for portable parallel programming.
+:mod:`freethreading` is a lightweight wrapper that provides a unified API for true
+parallel execution in Python. It automatically uses :mod:`threading` on free-threaded
+Python builds (where the GIL is disabled) and falls back to :mod:`multiprocessing` on
+standard ones. This enables true parallelism across Python versions while preferring the
+efficiency of threads over processes whenever possible.
 
-This module automatically selects between :mod:`threading` (when GIL is disabled)
-and :mod:`multiprocessing` (when GIL is enabled) to provide optimal performance
-across different Python builds.
-
-The API exposes only the common subset of features available in both backends,
-ensuring your code works identically regardless of the underlying implementation.
+:mod:`freethreading` is a drop-in replacement for *most* pre-existing :mod:`threading`
+and :mod:`multiprocessing` code. To achieve this, the module exposes only non-deprecated
+common functionality shared between both backends while discarding any backend-specific
+APIs.
 
 Examples
 --------
-Basic usage with automatic backend selection:
-
->>> import freethreading
->>> freethreading.get_backend()
-'multiprocessing'  # or 'threading' depending on Python build
-
-Create workers that adapt to the backend:
-
->>> from freethreading import Worker, Queue
->>> def worker_func(q):
-...     q.put("Hello from worker!")
->>> q = Queue()
->>> w = Worker(target=worker_func, args=(q,))
+>>> from freethreading import Worker, WorkerPoolExecutor, current_worker
+>>> def task():
+...     print(f"Hello from {current_worker().name}!")
+...
+>>> w = Worker(target=task, name="MyWorker")
 >>> w.start()
 >>> w.join()
->>> q.get()
-'Hello from worker!'
+Hello from MyWorker!
+>>>
+>>> with WorkerPoolExecutor(max_workers=2) as executor:
+...     # 'Hello from ThreadPoolExecutor-0_0!' or 'Hello from ForkProcess-2!'
+...     future = executor.submit(task)
+...
+Hello from ThreadPoolExecutor-0_0!
 
 See Also
 --------
-threading : Threading-based parallelism
-multiprocessing : Process-based parallelism
-concurrent.futures : High-level interface for asynchronous execution
-
-Notes
------
-Backend selection happens at import time by checking :func:`sys._is_gil_enabled`.
-The chosen backend remains consistent throughout the program's lifetime.
-
-All data passed to workers must be picklable when using the multiprocessing backend.
-Use module-level functions instead of lambdas or nested functions.
+threading : Threading-based parallelism.
+multiprocessing : Process-based parallelism.
+concurrent.futures : High-level interface for asynchronous execution.
 """
 
 import pickle
