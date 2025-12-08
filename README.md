@@ -6,9 +6,6 @@
 
 ---
 
-> [!WARNING]
-> This project is a work in progress and is not ready yet for production use.
-
 `freethreading` is a lightweight wrapper that provides a unified API for true parallel execution in Python. It
 automatically uses `threading` on free-threaded Python builds (where the [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock)
 is disabled) and falls back to `multiprocessing` on standard ones. This enables true parallelism across Python versions

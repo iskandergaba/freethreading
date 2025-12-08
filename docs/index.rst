@@ -5,9 +5,6 @@
 
 --------------------------------------------
 
-.. warning::
-   This project is a work in progress and is not ready yet for production use.
-
 :mod:`freethreading` is a lightweight wrapper that provides a unified API for true parallel execution in Python. It
 automatically uses :mod:`threading` on free-threaded Python builds (where the `Global Interpreter Lock (GIL)
 <https://docs.python.org/3/glossary.html#term-global-interpreter-lock>`_ is disabled) and falls back to
