@@ -2,14 +2,17 @@
 
 # freethreading — Thread-first true parallelism
 
+[![PyPI Version](https://img.shields.io/pypi/v/freethreading.svg?label=PyPI)](https://pypi.org/project/freethreading/)
+![Python Version](https://img.shields.io/pypi/pyversions/freethreading?label=Python)
+![License](https://img.shields.io/pypi/l/freethreading?label=License)
 [![CI Build](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg)](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j)](https://codecov.io/gh/iskandergaba/freethreading)
 [![Docs](https://readthedocs.org/projects/freethreading/badge/?version=latest)](https://freethreading.readthedocs.io/en/latest)
 
 `freethreading` is a lightweight wrapper that provides a unified API for true parallel execution in Python. It
-automatically uses `threading` on free-threaded Python builds (where the [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock)
-is disabled) and falls back to `multiprocessing` on standard ones. This enables true parallelism across Python versions
-while preferring the efficiency of [threads](https://en.wikipedia.org/wiki/Thread_(computing)) over
+automatically uses `threading` on free-threaded Python builds (where the
+[Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock) is disabled) and
+falls back to `multiprocessing` on standard ones. This enables true parallelism across Python versions while preferring the efficiency of [threads](https://en.wikipedia.org/wiki/Thread_(computing)) over
 [processes](https://en.wikipedia.org/wiki/Process_(computing)) whenever possible.
 
 </div>
