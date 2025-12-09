@@ -2,10 +2,10 @@
 
 # freethreading — Thread-first true parallelism
 
-[![PyPI Version](https://img.shields.io/pypi/v/freethreading.svg?label=PyPI)](https://pypi.org/project/freethreading/)
-![Python Version](https://img.shields.io/pypi/pyversions/freethreading?label=Python)
-![License](https://img.shields.io/pypi/l/freethreading?label=License)
-[![CI Build](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg)](https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml)
+[![PyPI Version](https://img.shields.io/pypi/v/free-threading.svg?label=PyPI)](https://pypi.org/project/free-threading/)
+![Python Versions](https://img.shields.io/pypi/pyversions/free-threading?label=Python)
+![License](https://img.shields.io/pypi/l/free-threading?label=License)
+[![CI Build](https://github.com/iskandergaba/free-threading/actions/workflows/ci.yml/badge.svg)](https://github.com/iskandergaba/free-threading/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j)](https://codecov.io/gh/iskandergaba/freethreading)
 [![Docs](https://readthedocs.org/projects/freethreading/badge/?version=latest)](https://freethreading.readthedocs.io/en/latest)
 
