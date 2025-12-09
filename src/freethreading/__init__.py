@@ -104,6 +104,18 @@ else:
     _backend = "threading"
 
 
+def _validate_picklability(**kwargs):
+    """Validate that all arguments are picklable for multiprocessing compatibility."""
+    try:
+        pickle.dumps(tuple(kwargs.values()))
+    except (AttributeError, TypeError, pickle.PicklingError) as e:
+        raise ValueError(
+            f"{list(kwargs.keys())} must be picklable for compatibility with "
+            f"multiprocessing backend. Error: {e}. "
+            f"Use module-level functions instead of lambdas or nested functions."
+        ) from e
+
+
 class Barrier:
     """
     Synchronization barrier for coordinating :class:`Worker` objects.
@@ -1100,15 +1112,7 @@ class Worker:
         if kwargs is None:
             kwargs = {}
 
-        try:
-            pickle.dumps((target, args, kwargs))
-        except (AttributeError, TypeError, pickle.PicklingError) as e:
-            raise ValueError(
-                f"Worker arguments must be picklable for compatibility with "
-                f"multiprocessing backend. "
-                f"Error: {e}. "
-                f"Use module-level functions instead of lambdas or nested functions."
-            ) from e
+        _validate_picklability(target=target, args=args, kwargs=kwargs)
 
         self._worker = _Worker(
             group=group,
@@ -1222,15 +1226,7 @@ class WorkerPool:
     """
 
     def __init__(self, workers=None, initializer=None, initargs=()):
-        try:
-            pickle.dumps((initializer, initargs))
-        except (AttributeError, TypeError, pickle.PicklingError) as e:
-            raise ValueError(
-                f"WorkerPool arguments must be picklable for compatibility with "
-                f"multiprocessing backend. "
-                f"Error: {e}. "
-                f"Use module-level functions instead of lambdas or nested functions."
-            ) from e
+        _validate_picklability(initializer=initializer, initargs=initargs)
 
         self._pool = _WorkerPool(
             processes=workers,
@@ -1257,9 +1253,15 @@ class WorkerPool:
         -------
         object
             Result of the function call.
+
+        Raises
+        ------
+        ValueError
+            If func, args, or kwds are not picklable.
         """
         if kwds is None:
             kwds = {}
+        _validate_picklability(func=func, args=args, kwds=kwds)
         return self._pool.apply(func, args, kwds)
 
     def apply_async(self, func, args=(), kwds=None, callback=None, error_callback=None):
@@ -1283,9 +1285,15 @@ class WorkerPool:
         -------
         AsyncResult
             Result object for retrieving the result.
+
+        Raises
+        ------
+        ValueError
+            If func, args, or kwds are not picklable.
         """
         if kwds is None:
             kwds = {}
+        _validate_picklability(func=func, args=args, kwds=kwds)
         return self._pool.apply_async(
             func, args, kwds, callback=callback, error_callback=error_callback
         )
@@ -1309,7 +1317,13 @@ class WorkerPool:
         -------
         list
             List of results in order.
+
+        Raises
+        ------
+        ValueError
+            If func is not picklable.
         """
+        _validate_picklability(func=func)
         return self._pool.map(func, iterable, chunksize)
 
     def map_async(
@@ -1335,7 +1349,13 @@ class WorkerPool:
         -------
         AsyncResult
             Result object for retrieving the results.
+
+        Raises
+        ------
+        ValueError
+            If func is not picklable.
         """
+        _validate_picklability(func=func)
         return self._pool.map_async(
             func, iterable, chunksize, callback=callback, error_callback=error_callback
         )
@@ -1357,7 +1377,13 @@ class WorkerPool:
         -------
         iterator
             Iterator yielding results in order.
+
+        Raises
+        ------
+        ValueError
+            If func is not picklable.
         """
+        _validate_picklability(func=func)
         return self._pool.imap(func, iterable, chunksize)
 
     def imap_unordered(self, func, iterable, chunksize=1):
@@ -1377,7 +1403,13 @@ class WorkerPool:
         -------
         iterator
             Iterator yielding results as they complete.
+
+        Raises
+        ------
+        ValueError
+            If func is not picklable.
         """
+        _validate_picklability(func=func)
         return self._pool.imap_unordered(func, iterable, chunksize)
 
     def starmap(self, func, iterable, chunksize=None):
@@ -1397,7 +1429,13 @@ class WorkerPool:
         -------
         list
             List of results in order.
+
+        Raises
+        ------
+        ValueError
+            If func is not picklable.
         """
+        _validate_picklability(func=func)
         return self._pool.starmap(func, iterable, chunksize)
 
     def starmap_async(
@@ -1423,7 +1461,13 @@ class WorkerPool:
         -------
         AsyncResult
             Result object for retrieving the results.
+
+        Raises
+        ------
+        ValueError
+            If func is not picklable.
         """
+        _validate_picklability(func=func)
         return self._pool.starmap_async(
             func, iterable, chunksize, callback=callback, error_callback=error_callback
         )
@@ -1511,7 +1555,13 @@ class WorkerPoolExecutor:
         -------
         Future
             A Future representing the execution.
+
+        Raises
+        ------
+        ValueError
+            If fn, args, or kwargs are not picklable.
         """
+        _validate_picklability(fn=fn, args=args, kwargs=kwargs)
         return self._executor.submit(fn, *args, **kwargs)
 
     def map(self, fn, *iterables, timeout=None, chunksize=1):
@@ -1536,9 +1586,12 @@ class WorkerPoolExecutor:
 
         Raises
         ------
+        ValueError
+            If fn is not picklable.
         TimeoutError
             If the entire result iterator could not be generated before the timeout.
         """
+        _validate_picklability(fn=fn)
         return self._executor.map(fn, *iterables, timeout=timeout, chunksize=chunksize)
 
     def shutdown(self, wait=True, cancel_futures=False):
