@@ -1,0 +1,33 @@
+# This workflow will install uv, resolve the package dependencies, run tests, build
+# and publish release package versions to PyPI upon upon publishing a new release version.
+
+name: Publish to PyPI
+on:
+  release:
+    types: [published]
+
+jobs:
+  pypi-release:
+    name: Build and Publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Build the package
+        run: uv build
+
+      - name: Publish package to PyPI
+        run: uv publish
