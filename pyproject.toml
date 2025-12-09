@@ -17,11 +17,12 @@ keywords = [
     "thread",
     "process",
     "worker",
-    "concurrency",
-    "parallelism",
     "threading",
     "free-threading",
+    "multithreading",
     "multiprocessing",
+    "concurrency",
+    "parallelism",
 ]
 requires-python = ">=3.10"
 
