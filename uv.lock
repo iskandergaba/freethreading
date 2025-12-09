@@ -309,7 +309,7 @@ wheels = [
 ]
 
 [[package]]
-name = "freethreading"
+name = "free-threading"
 version = "1.0.0rc2"
 source = { editable = "." }
 

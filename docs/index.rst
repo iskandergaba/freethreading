@@ -20,13 +20,13 @@ To install ``freethreading``, simply run:
 
 .. code-block:: shell
 
-   pip install freethreading
+   pip install free-threading
 
 To install the latest development version, you can run:
 
 .. code-block:: shell
 
-   pip install git+https://github.com/iskandergaba/freethreading.git
+   pip install git+https://github.com/iskandergaba/free-threading.git
 
 
 Quick Start

@@ -3,7 +3,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [project]
-name = "freethreading"
+name = "free-threading"
 version = "1.0.0rc2"
 description = "Thread-first true parallelism"
 license = "MIT"
@@ -41,6 +41,9 @@ docs = [
     "sphinx-autoapi~=3.6.0",
     "python-docs-theme~=2025.10"
 ]
+
+[tool.poetry]
+packages = [{ include = "freethreading", from = "src" }]
 
 [tool.uv.dependency-groups]
 docs = { requires-python = ">=3.12" }
