@@ -1,7 +1,7 @@
 ``freethreading`` — Thread-first true parallelism
 =================================================
 
-|CI Build| |Codecov| |Docs|
+|PyPI Version| |Python Versions| |License| |CI Build| |Codecov| |Docs|
 
 --------------------------------------------
 
@@ -140,12 +140,17 @@ Contents
    API Reference <generated/freethreading/index>
 
 
-.. |Codecov| image:: https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=D5F3PKSOEK
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/free-threading?label=Python
+.. |License| image:: https://img.shields.io/pypi/l/pyriodicity?label=License
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/free-threading.svg?label=PyPI
+   :target: https://pypi.org/project/free-threading/
+   :alt: PyPI Version
+.. |CI Build| image:: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml
+   :alt: CI Build
+.. |Codecov| image:: https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j
    :target: https://codecov.io/gh/iskandergaba/freethreading
    :alt: Codecov
 .. |Docs| image:: https://readthedocs.org/projects/freethreading/badge/?version=latest
    :target: https://freethreading.readthedocs.io/en/latest
    :alt: Docs
-.. |CI Build| image:: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg
-   :target: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml
-   :alt: CI Build

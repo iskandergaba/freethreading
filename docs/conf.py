@@ -52,7 +52,7 @@ html_theme = "python_docs_theme"
 html_copy_source = False
 html_show_sourcelink = False
 html_theme_options = {
-    "root_name": "Freethreading",
+    "root_name": "Free-threading",
     "root_url": "https://freethreading.readthedocs.io",
-    "issues_url": "https://github.com/iskandergaba/freethreading/issues",
+    "issues_url": "https://github.com/iskandergaba/free-threading/issues",
 }
