@@ -1,0 +1,34 @@
+# This workflow will install uv, resolve the package dependencies, run tests, build
+# and publish package versions to TestPyPI upon pushing tags of the format "*.*.*".
+
+name: Publish to TestPyPI
+on:
+  push:
+    tags:
+      - "*.*.*"
+
+jobs:
+  testpypi-release:
+    name: Build and Publish to TestPyPI
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Build the package
+        run: uv build
+
+      - name: Publish package to TestPyPI
+        run: uv publish --publish-url https://test.pypi.org/legacy/
