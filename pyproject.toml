@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "freethreading"
-version = "0.1.0"
+version = "1.0.0rc0"
 description = "Thread-first true parallelism"
 license = "MIT"
 readme = "README.md"
@@ -13,10 +13,15 @@ authors = [
 ]
 keywords = [
     "gil",
-    "threading",
-    "multiprocessing",
+    "nogil",
+    "thread",
+    "process",
+    "worker",
     "concurrency",
     "parallelism",
+    "threading",
+    "free-threading",
+    "multiprocessing",
 ]
 requires-python = ">=3.10"
 
