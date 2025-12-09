@@ -12,7 +12,8 @@ code once and run it efficiently everywhere.
 Parallel Execution
 ------------------
 
-:mod:`freethreading` offers low-level :class:`~freethreading.Worker` objects for direct task control and high-level
+:mod:`freethreading` offers low-level :class:`~freethreading.Worker` objects for direct task control,
+:class:`~freethreading.WorkerPool` objects for pool-based parallelism, and high-level
 :class:`~freethreading.WorkerPoolExecutor` objects for managed execution.
 
 ``Worker``
@@ -44,6 +45,24 @@ Set :attr:`~freethreading.Worker.daemon` to ``True`` when you need a fire-and-fo
 methods like :meth:`~freethreading.Worker.is_alive()` and :meth:`~freethreading.Worker.join()`, and check attributes
 such as :attr:`~freethreading.Worker.name`, exactly as you would with Python's standard :mod:`threading` or
 :mod:`multiprocessing` modules.
+
+``WorkerPool``
+^^^^^^^^^^^^^^
+
+:class:`~freethreading.WorkerPool` wraps :class:`~multiprocessing.pool.Pool` and
+:class:`~multiprocessing.pool.ThreadPool` into a single interface. Here's an example of how to use it:
+
+.. code-block:: pycon
+
+   >>> from freethreading import WorkerPool
+   >>>
+   >>> def square(x):
+   ...     return x * x
+   ...
+   >>> with WorkerPool(workers=4) as pool:
+   ...     print(pool.map(square, range(5)))
+   ...
+   [0, 1, 4, 9, 16]
 
 ``WorkerPoolExecutor``
 ^^^^^^^^^^^^^^^^^^^^^^

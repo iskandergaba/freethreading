@@ -12,7 +12,8 @@ APIs.
 
 Examples
 --------
->>> from freethreading import Worker, WorkerPoolExecutor, current_worker
+>>> from freethreading import Worker, WorkerPool, WorkerPoolExecutor, current_worker
+>>>
 >>> def task():
 ...     print(f"Hello from {current_worker().name}!")
 ...
@@ -20,6 +21,14 @@ Examples
 >>> w.start()
 >>> w.join()
 Hello from MyWorker!
+>>>
+>>> def square(x):
+...     return x * x
+...
+>>> with WorkerPool(workers=2) as pool:
+...     print(pool.map(square, range(5)))
+...
+[0, 1, 4, 9, 16]
 >>>
 >>> with WorkerPoolExecutor(max_workers=2) as executor:
 ...     # 'Hello from ThreadPoolExecutor-0_0!' or 'Hello from ForkProcess-2!'

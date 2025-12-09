@@ -80,8 +80,8 @@ get_ident()  # current thread or process identifier
 # 140247834...
 ```
 
-Only `current_worker`, `Worker`, and `WorkerPoolExecutor` differ from the standard library naming, using "worker" as a
-unified term for both threads and processes. Here is an example:
+Only `Worker`, `WorkerPool`, `WorkerPoolExecutor`, and `current_worker` differ from the standard library naming, using
+"worker" as a term for both threads and processes. Here is an example:
 
 ```python
 # threading
@@ -93,7 +93,7 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Process, current_process
 
 # freethreading (replaces both)
-from freethreading import Worker, WorkerPoolExecutor, current_worker
+from freethreading import Worker, WorkerPool, WorkerPoolExecutor, current_worker
 current_worker().name  # 'MainThread' or 'MainProcess'
 # 'MainThread'
 
@@ -105,6 +105,14 @@ w = Worker(target=task, name="MyWorker")
 w.start()
 w.join()
 # Hello from MyWorker!
+
+# Using WorkerPool (Pool or ThreadPool) to distribute work
+def square(x):
+    return x * x
+
+with WorkerPool(workers=2) as pool:
+    print(pool.map(square, range(5)))
+# [0, 1, 4, 9, 16]
 
 # Using WorkerPoolExecutor (ThreadPoolExecutor or ProcessPoolExecutor) to run a task
 with WorkerPoolExecutor(max_workers=2) as executor:

@@ -84,9 +84,9 @@ across backends and simplify adoption. Here's what that looks like:
    >>> get_ident()  # current thread or process identifier
    140247834...
 
-Only :func:`~freethreading.current_worker`, :class:`~freethreading.Worker`, and
-:class:`~freethreading.WorkerPoolExecutor` differ from the standard library naming, using "worker" as a unified term
-for both threads and processes. Here is an example:
+Only :class:`~freethreading.Worker`, :class:`~freethreading.WorkerPool`, :class:`~freethreading.WorkerPoolExecutor`,
+and :func:`~freethreading.current_worker` differ from the standard library naming, using "worker" as a term for both
+threads and processes. Here is an example:
 
 .. code-block:: pycon
 
@@ -99,7 +99,7 @@ for both threads and processes. Here is an example:
    >>> from multiprocessing import Process, current_process
    >>>
    >>> # freethreading (replaces both)
-   >>> from freethreading import Worker, WorkerPoolExecutor, current_worker
+   >>> from freethreading import Worker, WorkerPool, WorkerPoolExecutor, current_worker
    >>> current_worker().name # 'MainThread' or 'MainProcess'
    'MainThread'
    >>>
@@ -111,6 +111,15 @@ for both threads and processes. Here is an example:
    >>> w.start()
    >>> w.join()
    Hello from MyWorker!
+   >>>
+   >>> # Using WorkerPool (Pool or ThreadPool) to distribute work
+   >>> def square(x):
+   ...     return x * x
+   ...
+   >>> with WorkerPool(workers=2) as pool:
+   ...     print(pool.map(square, range(5)))
+   ...
+   [0, 1, 4, 9, 16]
    >>>
    >>> # Using WorkerPoolExecutor (ThreadPoolExecutor or ProcessPoolExecutor) to run a task
    >>> with WorkerPoolExecutor(max_workers=2) as executor:
