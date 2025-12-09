@@ -16,11 +16,11 @@ efficiency of `threads <https://en.wikipedia.org/wiki/Thread_(computing)>`_ over
 Installation
 ------------
 
-.. To install ``freethreading``, simply run:
+To install ``freethreading``, simply run:
 
-.. .. code-block:: shell
+.. code-block:: shell
 
-..    pip install freethreading
+   pip install freethreading
 
 To install the latest development version, you can run:
 

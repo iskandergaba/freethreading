@@ -19,11 +19,11 @@ falls back to `multiprocessing` on standard ones. This enables true parallelism 
 
 ## Installation
 
-<!-- To install `freethreading`, simply run:
+ To install `freethreading`, simply run:
 
 ```shell
 pip install freethreading
-``` -->
+```
 
 To install the latest development version, you can run:
 
