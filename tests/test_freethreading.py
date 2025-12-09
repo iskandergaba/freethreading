@@ -637,6 +637,11 @@ def test_worker_pool_terminate(backend):
     pool.join()
 
 
+def test_worker_pool_pickling_exception(backend):
+    with pytest.raises(ValueError, match="must be picklable"):
+        backend.WorkerPool(initializer=lambda: None)
+
+
 def test_worker_pool_executor_map(backend):
     with backend.WorkerPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(square, [1, 2, 3, 4]))

@@ -1197,6 +1197,13 @@ class WorkerPool:
     initargs : tuple, default=()
         Arguments for initializer.
 
+    Raises
+    ------
+    ValueError
+        If initializer or initargs are not picklable. All arguments must be picklable
+        to ensure portability across threading and multiprocessing backends. Use
+        module-level functions instead of lambdas or nested functions.
+
     See Also
     --------
     multiprocessing.pool.Pool : Process pool implementation.
@@ -1215,6 +1222,16 @@ class WorkerPool:
     """
 
     def __init__(self, workers=None, initializer=None, initargs=()):
+        try:
+            pickle.dumps((initializer, initargs))
+        except (AttributeError, TypeError, pickle.PicklingError) as e:
+            raise ValueError(
+                f"WorkerPool arguments must be picklable for compatibility with "
+                f"multiprocessing backend. "
+                f"Error: {e}. "
+                f"Use module-level functions instead of lambdas or nested functions."
+            ) from e
+
         self._pool = _WorkerPool(
             processes=workers,
             initializer=initializer,
