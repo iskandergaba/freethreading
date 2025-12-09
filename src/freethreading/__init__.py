@@ -43,7 +43,7 @@ from typing import Literal
 _backend: Literal["threading", "multiprocessing"]
 
 if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
-    from concurrent.futures import ProcessPoolExecutor as _PoolExecutor
+    from concurrent.futures import ProcessPoolExecutor as _WorkerPoolExecutor
     from multiprocessing import Barrier as _Barrier
     from multiprocessing import BoundedSemaphore as _BoundedSemaphore
     from multiprocessing import Condition as _Condition
@@ -56,6 +56,7 @@ if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from multiprocessing import SimpleQueue as _SimpleQueue
     from multiprocessing import active_children as _active_children
     from multiprocessing import current_process as _current_worker
+    from multiprocessing.pool import Pool as _WorkerPool
     from os import getpid as _get_ident
 
     def _active_count():
@@ -69,7 +70,8 @@ if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     _backend = "multiprocessing"
 
 else:
-    from concurrent.futures import ThreadPoolExecutor as _PoolExecutor
+    from concurrent.futures import ThreadPoolExecutor as _WorkerPoolExecutor
+    from multiprocessing.pool import ThreadPool as _WorkerPool
     from queue import Queue as _Queue
     from queue import SimpleQueue as _SimpleQueue
     from threading import Barrier as _Barrier
@@ -1169,6 +1171,269 @@ class Worker:
         self._worker.daemon = value
 
 
+class WorkerPool:
+    """
+    Pool of workers for parallel execution.
+
+    Provides a pool of workers that can execute tasks in parallel. Uses
+    :class:`multiprocessing.pool.Pool` or :class:`multiprocessing.pool.ThreadPool`
+    depending on backend.
+
+    Parameters
+    ----------
+    workers : int, optional
+        Number of workers in the pool. Defaults to the number of CPUs.
+    initializer : callable, optional
+        Callable invoked on each worker at start.
+    initargs : tuple, default=()
+        Arguments for initializer.
+
+    See Also
+    --------
+    multiprocessing.pool.Pool : Process pool implementation.
+    multiprocessing.pool.ThreadPool : Thread pool implementation.
+
+    Examples
+    --------
+    >>> from freethreading import WorkerPool
+    >>>
+    >>> def square(x):
+    ...     return x * x
+    >>> with WorkerPool(workers=4) as pool:
+    ...     results = pool.map(square, range(10))
+    >>> results
+    [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+    """
+
+    def __init__(self, workers=None, initializer=None, initargs=()):
+        self._pool = _WorkerPool(
+            processes=workers,
+            initializer=initializer,
+            initargs=initargs,
+        )
+
+    def apply(self, func, args=(), kwds=None):
+        """
+        Call func with arguments args and keyword arguments kwds.
+
+        Blocks until the result is ready.
+
+        Parameters
+        ----------
+        func : callable
+            Function to call.
+        args : tuple, default=()
+            Positional arguments for func.
+        kwds : dict, optional
+            Keyword arguments for func.
+
+        Returns
+        -------
+        object
+            Result of the function call.
+        """
+        if kwds is None:
+            kwds = {}
+        return self._pool.apply(func, args, kwds)
+
+    def apply_async(self, func, args=(), kwds=None, callback=None, error_callback=None):
+        """
+        Asynchronous version of :meth:`apply`.
+
+        Parameters
+        ----------
+        func : callable
+            Function to call.
+        args : tuple, default=()
+            Positional arguments for func.
+        kwds : dict, optional
+            Keyword arguments for func.
+        callback : callable, optional
+            Called with the result when ready.
+        error_callback : callable, optional
+            Called with exception if call fails.
+
+        Returns
+        -------
+        AsyncResult
+            Result object for retrieving the result.
+        """
+        if kwds is None:
+            kwds = {}
+        return self._pool.apply_async(
+            func, args, kwds, callback=callback, error_callback=error_callback
+        )
+
+    def map(self, func, iterable, chunksize=None):
+        """
+        Apply func to each element in iterable.
+
+        Blocks until all results are ready.
+
+        Parameters
+        ----------
+        func : callable
+            Function to apply.
+        iterable : iterable
+            Iterable of arguments.
+        chunksize : int, optional
+            Size of chunks for workers. Larger values reduce overhead.
+
+        Returns
+        -------
+        list
+            List of results in order.
+        """
+        return self._pool.map(func, iterable, chunksize)
+
+    def map_async(
+        self, func, iterable, chunksize=None, callback=None, error_callback=None
+    ):
+        """
+        Asynchronous version of :meth:`map`.
+
+        Parameters
+        ----------
+        func : callable
+            Function to apply.
+        iterable : iterable
+            Iterable of arguments.
+        chunksize : int, optional
+            Size of chunks for workers.
+        callback : callable, optional
+            Called with the result list when ready.
+        error_callback : callable, optional
+            Called with exception if call fails.
+
+        Returns
+        -------
+        AsyncResult
+            Result object for retrieving the results.
+        """
+        return self._pool.map_async(
+            func, iterable, chunksize, callback=callback, error_callback=error_callback
+        )
+
+    def imap(self, func, iterable, chunksize=1):
+        """
+        Lazier version of :meth:`map`.
+
+        Parameters
+        ----------
+        func : callable
+            Function to apply.
+        iterable : iterable
+            Iterable of arguments.
+        chunksize : int, default=1
+            Size of chunks for workers.
+
+        Returns
+        -------
+        iterator
+            Iterator yielding results in order.
+        """
+        return self._pool.imap(func, iterable, chunksize)
+
+    def imap_unordered(self, func, iterable, chunksize=1):
+        """
+        Like :meth:`imap` but results are yielded as soon as ready.
+
+        Parameters
+        ----------
+        func : callable
+            Function to apply.
+        iterable : iterable
+            Iterable of arguments.
+        chunksize : int, default=1
+            Size of chunks for workers.
+
+        Returns
+        -------
+        iterator
+            Iterator yielding results as they complete.
+        """
+        return self._pool.imap_unordered(func, iterable, chunksize)
+
+    def starmap(self, func, iterable, chunksize=None):
+        """
+        Like :meth:`map` but arguments are unpacked from iterables.
+
+        Parameters
+        ----------
+        func : callable
+            Function to apply.
+        iterable : iterable
+            Iterable of argument tuples.
+        chunksize : int, optional
+            Size of chunks for workers.
+
+        Returns
+        -------
+        list
+            List of results in order.
+        """
+        return self._pool.starmap(func, iterable, chunksize)
+
+    def starmap_async(
+        self, func, iterable, chunksize=None, callback=None, error_callback=None
+    ):
+        """
+        Asynchronous version of :meth:`starmap`.
+
+        Parameters
+        ----------
+        func : callable
+            Function to apply.
+        iterable : iterable
+            Iterable of argument tuples.
+        chunksize : int, optional
+            Size of chunks for workers.
+        callback : callable, optional
+            Called with the result list when ready.
+        error_callback : callable, optional
+            Called with exception if call fails.
+
+        Returns
+        -------
+        AsyncResult
+            Result object for retrieving the results.
+        """
+        return self._pool.starmap_async(
+            func, iterable, chunksize, callback=callback, error_callback=error_callback
+        )
+
+    def close(self):
+        """
+        Prevent any more tasks from being submitted to the pool.
+
+        Once all tasks are complete, workers will exit.
+        """
+        self._pool.close()
+
+    def terminate(self):
+        """
+        Stop workers immediately without completing outstanding work.
+        """
+        self._pool.terminate()
+
+    def join(self):
+        """
+        Wait for workers to exit.
+
+        Must call :meth:`close` or :meth:`terminate` before using :meth:`join`.
+        """
+        self._pool.join()
+
+    def __enter__(self):
+        """Enter the runtime context."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the runtime context (terminate the pool)."""
+        self.terminate()
+        return False
+
+
 class WorkerPoolExecutor:
     """
     Executor that manages a pool of :class:`Worker` objects.
@@ -1201,7 +1466,7 @@ class WorkerPoolExecutor:
     """
 
     def __init__(self, max_workers=None, **kwargs):
-        self._executor = _PoolExecutor(max_workers=max_workers, **kwargs)
+        self._executor = _WorkerPoolExecutor(max_workers=max_workers, **kwargs)
 
     def submit(self, fn, *args, **kwargs):
         """
@@ -1236,7 +1501,7 @@ class WorkerPoolExecutor:
         timeout : float, optional
             Maximum time to wait for results. None means no limit.
         chunksize : int, default=1
-            Size of chunks for multiprocessing.
+            Size of chunks for workers.
 
         Returns
         -------
@@ -1454,6 +1719,7 @@ __all__ = [
     "Semaphore",
     "SimpleQueue",
     "Worker",
+    "WorkerPool",
     "WorkerPoolExecutor",
     "active_children",
     "active_count",

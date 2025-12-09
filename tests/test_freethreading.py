@@ -9,7 +9,7 @@ import pytest
 
 
 # Module-level functions for multiprocessing picklability
-def simple_task():
+def task():
     pass
 
 
@@ -23,10 +23,6 @@ def task_with_kwargs(x, y=10):
 
 def square(x):
     return x * x
-
-
-def task_that_returns_value():
-    return 42
 
 
 @pytest.fixture(params=[True, False], ids=["multiprocessing", "threading"])
@@ -108,7 +104,7 @@ def test_worker_with_kwargs(backend):
 
 
 def test_worker_name_property(backend):
-    worker = backend.Worker(target=simple_task, name="InitialName")
+    worker = backend.Worker(target=task, name="InitialName")
     assert worker.name == "InitialName"
 
     # Set new name before starting
@@ -120,7 +116,7 @@ def test_worker_name_property(backend):
 
 
 def test_worker_daemon_property(backend):
-    worker = backend.Worker(target=simple_task, daemon=False)
+    worker = backend.Worker(target=task, daemon=False)
     assert worker.daemon is False
 
     worker.daemon = True
@@ -538,14 +534,117 @@ def test_simple_queue_empty(backend):
     assert q.empty()
 
 
-def test_pool_executor_map(backend):
+def test_worker_pool_apply(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        result = pool.apply(square, (5,))
+
+    assert result == 25
+
+
+def test_worker_pool_apply_with_kwds(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        result = pool.apply(task_with_kwargs, (5,), {"y": 3})
+
+    assert result == 8
+
+
+def test_worker_pool_apply_async(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        async_result = pool.apply_async(square, (7,))
+        result = async_result.get(timeout=5)
+
+    assert result == 49
+
+
+def test_worker_pool_apply_async_callback(backend):
+    results = []
+
+    def callback(result):
+        results.append(result)
+
+    with backend.WorkerPool(workers=2) as pool:
+        async_result = pool.apply_async(square, (6,), callback=callback)
+        async_result.wait(timeout=5)
+
+    time.sleep(0.1)  # Give callback time to execute
+    assert 36 in results
+
+
+def test_worker_pool_map(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        results = pool.map(square, [1, 2, 3, 4])
+
+    assert results == [1, 4, 9, 16]
+
+
+def test_worker_pool_map_chunksize(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        results = pool.map(square, range(10), chunksize=3)
+
+    assert results == [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+
+def test_worker_pool_map_async(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        async_result = pool.map_async(square, [1, 2, 3, 4])
+        results = async_result.get(timeout=5)
+
+    assert results == [1, 4, 9, 16]
+
+
+def test_worker_pool_imap(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        results = list(pool.imap(square, [1, 2, 3, 4]))
+
+    assert results == [1, 4, 9, 16]
+
+
+def test_worker_pool_imap_unordered(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        results = sorted(pool.imap_unordered(square, [1, 2, 3, 4]))
+
+    assert results == [1, 4, 9, 16]
+
+
+def test_worker_pool_starmap(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        results = pool.starmap(task_with_args, [(1, 2), (3, 4), (5, 6)])
+
+    assert results == [3, 7, 11]
+
+
+def test_worker_pool_starmap_async(backend):
+    with backend.WorkerPool(workers=2) as pool:
+        async_result = pool.starmap_async(task_with_args, [(1, 2), (3, 4), (5, 6)])
+        results = async_result.get(timeout=5)
+
+    assert results == [3, 7, 11]
+
+
+def test_worker_pool_close_join(backend):
+    pool = backend.WorkerPool(workers=2)
+    async_result = pool.apply_async(square, (5,))
+
+    pool.close()
+    pool.join()
+
+    assert async_result.get(timeout=1) == 25
+
+
+def test_worker_pool_terminate(backend):
+    pool = backend.WorkerPool(workers=2)
+    pool.terminate()
+    pool.join()
+
+
+def test_worker_pool_executor_map(backend):
     with backend.WorkerPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(square, [1, 2, 3, 4]))
 
     assert results == [1, 4, 9, 16]
 
 
-def test_pool_executor_submit(backend):
+def test_worker_pool_executor_submit(backend):
     with backend.WorkerPoolExecutor(max_workers=2) as executor:
         future = executor.submit(square, 5)
         result = future.result()
@@ -553,7 +652,7 @@ def test_pool_executor_submit(backend):
     assert result == 25
 
 
-def test_pool_executor_shutdown(backend):
+def test_worker_pool_executor_shutdown(backend):
     executor = backend.WorkerPoolExecutor(max_workers=2)
 
     # Submit a task
