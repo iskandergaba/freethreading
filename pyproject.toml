@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "free-threading"
-version = "1.0.2"
+version = "1.0.3rc0"
 description = "Thread-first true parallelism"
 license = "MIT"
 readme = "README.md"
@@ -27,7 +27,7 @@ keywords = [
 requires-python = ">=3.10"
 
 [project.urls]
-repository = "https://github.com/iskandergaba/freethreading"
+repository = "https://github.com/iskandergaba/free-threading"
 documentation = "https://freethreading.readthedocs.io"
 
 [dependency-groups]
