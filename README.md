@@ -88,7 +88,8 @@ get_ident()  # current thread or process identifier
 Only `Worker`, `WorkerPool`, `WorkerPoolExecutor`, and `current_worker` differ from the standard library naming, using
 "worker" as a term for both threads and processes. Below is an example:
 
-> [!NOTE]
+> **Note**
+>
 > On Python 3.14 (standard builds), examples using user-defined functions with `Worker`, `WorkerPool`, or
 > `WorkerPoolExecutor` must be saved to a `.py` file to run.
 
