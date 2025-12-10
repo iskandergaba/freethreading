@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "free-threading"
-version = "1.0.0"
+version = "1.0.1rc0"
 description = "Thread-first true parallelism"
 license = "MIT"
 readme = "README.md"
