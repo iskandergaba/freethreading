@@ -16,6 +16,12 @@ Parallel Execution
 :class:`~freethreading.WorkerPool` objects for pool-based parallelism, and high-level
 :class:`~freethreading.WorkerPoolExecutor` objects for managed execution.
 
+.. note::
+
+   On Python 3.14 (standard builds), examples using user-defined functions with :class:`~freethreading.Worker`,
+   :class:`~freethreading.WorkerPool`, or :class:`~freethreading.WorkerPoolExecutor` must be saved to a ``.py`` file to
+   run.
+
 ``Worker``
 ^^^^^^^^^^
 

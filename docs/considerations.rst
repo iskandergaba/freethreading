@@ -27,6 +27,13 @@ In addition to general concurrency pitfalls like proper resource cleanup and dae
 a few of its own that stem from supporting consistent behavior across both :mod:`threading` and :mod:`multiprocessing`
 backends.
 
+REPL Limitations on Python 3.14
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On Python 3.14 (standard builds), examples using user-defined functions with :class:`~freethreading.Worker`,
+:class:`~freethreading.WorkerPool`, or :class:`~freethreading.WorkerPoolExecutor` must be saved to a ``.py`` file to
+run.
+
 Picklability Requirement
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

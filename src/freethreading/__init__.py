@@ -36,6 +36,12 @@ Hello from MyWorker!
 ...
 Hello from ThreadPoolExecutor-0_0!
 
+Note
+----
+On Python 3.14 (standard builds), examples using user-defined functions with
+:class:`Worker`, :class:`WorkerPool`, or :class:`WorkerPoolExecutor` must be saved to a
+``.py`` file to run.
+
 See Also
 --------
 threading : Threading-based parallelism.

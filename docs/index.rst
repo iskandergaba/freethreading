@@ -86,7 +86,13 @@ across backends and simplify adoption. Here's what that looks like:
 
 Only :class:`~freethreading.Worker`, :class:`~freethreading.WorkerPool`, :class:`~freethreading.WorkerPoolExecutor`,
 and :func:`~freethreading.current_worker` differ from the standard library naming, using "worker" as a term for both
-threads and processes. Here is an example:
+threads and processes. Below is an example:
+
+.. note::
+
+   On Python 3.14 (standard builds), examples using user-defined functions with :class:`~freethreading.Worker`,
+   :class:`~freethreading.WorkerPool`, or :class:`~freethreading.WorkerPoolExecutor` must be saved to a ``.py`` file to
+   run.
 
 .. code-block:: pycon
 
