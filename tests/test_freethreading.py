@@ -1,6 +1,7 @@
 """Tests for freethreading module on both threading and multiprocessing backends."""
 
 import importlib
+import platform
 import sys
 import threading
 import time
@@ -477,6 +478,14 @@ def test_queue_task_done_join(backend):
 
 def test_queue_qsize(backend):
     q = backend.Queue()
+
+    # qsize() raises NotImplementedError on macOS with multiprocessing because
+    # sem_getvalue() is not implemented on that platform
+    if platform.system() == "Darwin" and backend.get_backend() == "multiprocessing":
+        with pytest.raises(NotImplementedError):
+            q.qsize()
+        return
+
     assert q.qsize() == 0
     q.put(1)
 
