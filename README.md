@@ -6,7 +6,7 @@
 ![Python Versions](https://img.shields.io/pypi/pyversions/free-threading?label=Python)
 ![License](https://img.shields.io/pypi/l/free-threading?label=License)
 [![CI Build](https://github.com/iskandergaba/free-threading/actions/workflows/ci.yml/badge.svg)](https://github.com/iskandergaba/free-threading/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j)](https://codecov.io/gh/iskandergaba/freethreading)
+[![Codecov](https://codecov.io/gh/iskandergaba/free-threading/graph/badge.svg?token=LWBRgtlX8j)](https://codecov.io/gh/iskandergaba/free-threading)
 [![Docs](https://readthedocs.org/projects/freethreading/badge/?version=latest)](https://freethreading.readthedocs.io/en/latest)
 
 `freethreading` is a lightweight wrapper that provides a unified API for true parallel execution in Python. It

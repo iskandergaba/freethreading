@@ -50,6 +50,7 @@ concurrent.futures : High-level interface for asynchronous execution.
 """
 
 import pickle
+import platform
 import sys
 from multiprocessing.process import BaseProcess
 from threading import Thread
@@ -756,7 +757,16 @@ class Queue:
         -------
         int
             Number of items in the queue.
+
+        Raises
+        ------
+        NotImplementedError
+            On macOS, due to platform limitations (sem_getvalue not implemented).
         """
+        if platform.system() == "Darwin":
+            raise NotImplementedError(
+                "qsize() is not available on macOS due to platform limitations."
+            )
         return self._queue.qsize()
 
     def empty(self):

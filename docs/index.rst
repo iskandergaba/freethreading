@@ -147,15 +147,15 @@ Contents
 
 
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/free-threading?label=Python
-.. |License| image:: https://img.shields.io/pypi/l/pyriodicity?label=License
+.. |License| image:: https://img.shields.io/pypi/l/free-threading?label=License
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/free-threading.svg?label=PyPI
    :target: https://pypi.org/project/free-threading/
    :alt: PyPI Version
-.. |CI Build| image:: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml/badge.svg
-   :target: https://github.com/iskandergaba/freethreading/actions/workflows/ci.yml
+.. |CI Build| image:: https://github.com/iskandergaba/free-threading/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/iskandergaba/free-threading/actions/workflows/ci.yml
    :alt: CI Build
-.. |Codecov| image:: https://codecov.io/gh/iskandergaba/freethreading/graph/badge.svg?token=LWBRgtlX8j
-   :target: https://codecov.io/gh/iskandergaba/freethreading
+.. |Codecov| image:: https://codecov.io/gh/iskandergaba/free-threading/graph/badge.svg?token=LWBRgtlX8j
+   :target: https://codecov.io/gh/iskandergaba/free-threading
    :alt: Codecov
 .. |Docs| image:: https://readthedocs.org/projects/freethreading/badge/?version=latest
    :target: https://freethreading.readthedocs.io/en/latest

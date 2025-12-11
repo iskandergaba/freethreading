@@ -20,6 +20,15 @@ backend-specific features like shared memory or thread-local storage, then the c
 corresponding backend or to adapt the code to the common feature set of both.
 
 
+Platform Limitations
+--------------------
+
+.. todo::
+
+   Document macOS limitation: ``Queue.qsize()`` raises ``NotImplementedError`` on macOS with the multiprocessing
+   backend because ``sem_getvalue()`` is not implemented on that platform.
+
+
 Constraints and Pitfalls
 ------------------------
 

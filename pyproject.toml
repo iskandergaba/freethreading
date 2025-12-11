@@ -35,11 +35,12 @@ dev = [
     "ruff~=0.14.0",
     "pytest~=9.0.0",
     "pytest-cov~=7.0.0",
+    "pytest-rerunfailures~=16.1.0",
     "sphinx-autobuild~=2024.10.0",
 ]
 docs = [
     "sphinx-autoapi~=3.6.0",
-    "python-docs-theme~=2025.10"
+    "python-docs-theme~=2025.12"
 ]
 
 [tool.poetry]
