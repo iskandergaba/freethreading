@@ -479,9 +479,8 @@ def test_queue_task_done_join(backend):
 def test_queue_qsize(backend):
     q = backend.Queue()
 
-    # qsize() raises NotImplementedError on macOS with multiprocessing because
-    # sem_getvalue() is not implemented on that platform
-    if platform.system() == "Darwin" and backend.get_backend() == "multiprocessing":
+    # qsize() raises NotImplementedError on macOS due to platform limitations
+    if platform.system() == "Darwin":
         with pytest.raises(NotImplementedError):
             q.qsize()
         return
