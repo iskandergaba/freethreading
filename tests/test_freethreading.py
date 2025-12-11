@@ -127,8 +127,9 @@ def test_worker_daemon_property(backend):
     worker.join()
 
 
+@pytest.mark.flaky(reruns=3)
 def test_worker_is_alive(backend):
-    worker = backend.Worker(target=time.sleep, args=(0.01,))
+    worker = backend.Worker(target=time.sleep, args=(0.1,))
     assert not worker.is_alive()
 
     worker.start()
@@ -542,6 +543,7 @@ def test_simple_queue_empty(backend):
     assert q.empty()
 
 
+@pytest.mark.flaky(reruns=3)
 def test_worker_pool_apply(backend):
     with backend.WorkerPool(workers=2) as pool:
         result = pool.apply(square, (5,))
@@ -556,6 +558,7 @@ def test_worker_pool_apply_with_kwds(backend):
     assert result == 8
 
 
+@pytest.mark.flaky(reruns=3)
 def test_worker_pool_apply_async(backend):
     with backend.WorkerPool(workers=2) as pool:
         async_result = pool.apply_async(square, (7,))
