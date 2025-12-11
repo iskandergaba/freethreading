@@ -335,7 +335,7 @@ dev = [
     { name = "sphinx-autobuild", specifier = "~=2024.10.0" },
 ]
 docs = [
-    { name = "python-docs-theme", marker = "python_full_version >= '3.12'", specifier = "~=2025.10" },
+    { name = "python-docs-theme", marker = "python_full_version >= '3.12'", specifier = "~=2025.12" },
     { name = "sphinx-autoapi", marker = "python_full_version >= '3.12'", specifier = "~=3.6.0" },
 ]
 
@@ -533,14 +533,14 @@ wheels = [
 
 [[package]]
 name = "python-docs-theme"
-version = "2025.10"
+version = "2025.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/88/8914b7c82ea89d157ab3403090ff01e57a77add9b90c4bc7072c0fc7fa5b/python_docs_theme-2025.10.tar.gz", hash = "sha256:f2b3bd9b844fe4f78d41e093f35dd988e4f752b970db08a8681b1396640e1d61", size = 28206, upload-time = "2025-10-24T15:50:06.368Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/a7/d020d81572b279e845a6708eee5a761eda0c89bb9adae9eadc16b49f3a1a/python_docs_theme-2025.12.tar.gz", hash = "sha256:c2ce9783547df0ee88de43d684b3ae728fd8e4d3470db0f3aeebfeaa8e682586", size = 28520, upload-time = "2025-12-10T15:50:46.137Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/ee/4c6a306208adedca07fb83ca5826c14447872704301579193d93a7a4d3f0/python_docs_theme-2025.10-py3-none-any.whl", hash = "sha256:07c55395098154c9ca82cdba650c5b169ba2310c4aeafe87e46e67e46a20448b", size = 66759, upload-time = "2025-10-24T15:50:05.133Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/00/726e9cd190bcfb9eb5dfb3498bfa5e3966e86ca4d7c1da40d006a5b61d90/python_docs_theme-2025.12-py3-none-any.whl", hash = "sha256:4c4ca9486fac95a28f718d1ad3eaefaad9ba8def4cebefa5c28f857230bbf1b7", size = 69918, upload-time = "2025-12-10T15:50:44.728Z" },
 ]
 
 [[package]]
