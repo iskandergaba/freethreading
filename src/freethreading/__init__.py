@@ -52,12 +52,12 @@ concurrent.futures : High-level interface for asynchronous execution.
 import pickle
 import platform
 import sys
+from multiprocessing.context import get_spawning_popen, set_spawning_popen
 from multiprocessing.process import BaseProcess
 from threading import Thread
 from typing import Literal
 
 _backend: Literal["threading", "multiprocessing"]
-
 if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from concurrent.futures import ProcessPoolExecutor as _WorkerPoolExecutor
     from multiprocessing import Barrier as _Barrier
@@ -113,6 +113,9 @@ else:
 
 def _validate_picklability(**kwargs):
     """Validate that all arguments are picklable for multiprocessing compatibility."""
+    # TODO: Explain why this is necessary
+    spawning_popen = get_spawning_popen()
+    set_spawning_popen(True)
     try:
         pickle.dumps(tuple(kwargs.values()))
     except (AttributeError, TypeError, pickle.PicklingError) as e:
@@ -121,6 +124,8 @@ def _validate_picklability(**kwargs):
             f"multiprocessing backend. Error: {e}. "
             f"Use module-level functions instead of lambdas or nested functions."
         ) from e
+    finally:
+        set_spawning_popen(spawning_popen)
 
 
 class Barrier:
