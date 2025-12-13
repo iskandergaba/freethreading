@@ -132,6 +132,10 @@ def _validate_picklability(**kwargs):
         set_spawning_popen(spawning_popen)
 
 
+def _raise_unpickle_type_error():
+    raise TypeError("Cannot unpickle freethreading primitives on threading backend")
+
+
 class _MockPopen:
     """Mock Popen for picklability validation with ForkingPickler."""
 
@@ -193,6 +197,11 @@ class Barrier:
 
     def __init__(self, parties, action=None, timeout=None):
         self._barrier = _Barrier(parties, action, timeout)
+
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._barrier.__reduce__()
 
     def wait(self, timeout=None):
         """
@@ -272,6 +281,11 @@ class BoundedSemaphore:
 
     def __init__(self, value=1):
         self._semaphore = _BoundedSemaphore(value)
+
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._semaphore.__reduce__()
 
     def acquire(self, blocking=True, timeout=None):
         """
@@ -361,6 +375,11 @@ class Condition:
         self._condition = _Condition(
             lock._lock if isinstance(lock, (Lock, RLock)) else None  # type: ignore[arg-type]
         )
+
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._condition.__reduce__()
 
     def acquire(self, blocking=True, timeout=None):
         """
@@ -528,6 +547,11 @@ class Event:
     def __init__(self):
         self._event = _Event()
 
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._event.__reduce__()
+
     def is_set(self):
         """
         Return True if and only if the internal flag is set.
@@ -597,6 +621,11 @@ class Lock:
 
     def __init__(self):
         self._lock = _Lock()
+
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._lock.__reduce__()
 
     def acquire(self, blocking=True, timeout=None):
         """
@@ -713,6 +742,11 @@ class Queue:
 
     def __init__(self, maxsize=0):
         self._queue = _Queue(maxsize)
+
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._queue.__reduce__()
 
     def put(self, item, block=True, timeout=None):
         """
@@ -885,6 +919,11 @@ class RLock:
     def __init__(self):
         self._lock = _RLock()
 
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._lock.__reduce__()
+
     def acquire(self, blocking=True, timeout=None):
         """
         Acquire the lock, incrementing the recursion level.
@@ -977,6 +1016,11 @@ class Semaphore:
     def __init__(self, value=1):
         self._semaphore = _Semaphore(value)
 
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._semaphore.__reduce__()
+
     def acquire(self, blocking=True, timeout=None):
         """
         Acquire the semaphore, decrementing the counter.
@@ -1044,6 +1088,11 @@ class SimpleQueue:
 
     def __init__(self):
         self._queue = _SimpleQueue()
+
+    def __reduce__(self):
+        if _backend == "threading":
+            return (_raise_unpickle_type_error, ())
+        return self._queue.__reduce__()
 
     def put(self, item):
         """
