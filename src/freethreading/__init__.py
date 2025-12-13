@@ -116,26 +116,6 @@ else:
     _backend = "threading"
 
 
-def _validate_picklability(**kwargs):
-    """Validate that all arguments are picklable for multiprocessing compatibility."""
-    spawning_popen = get_spawning_popen()
-    set_spawning_popen(_DummyPopen)
-    try:
-        dump(tuple(kwargs.values()), io.BytesIO())
-    except (AttributeError, TypeError, pickle.PicklingError) as e:
-        raise ValueError(
-            f"{list(kwargs.keys())} must be picklable for compatibility with "
-            f"multiprocessing backend. Error: {e}. "
-            f"Use module-level functions instead of lambdas or nested functions."
-        ) from e
-    finally:
-        set_spawning_popen(spawning_popen)
-
-
-def _raise_unpickle_type_error():
-    raise TypeError("Cannot unpickle freethreading primitives on threading backend")
-
-
 class _DummyPopen:
     """Dummy Popen for picklability validation with ForkingPickler."""
 
@@ -1700,6 +1680,26 @@ class WorkerPoolExecutor:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the runtime context (shutdown the executor)."""
         return self._executor.__exit__(exc_type, exc_val, exc_tb)
+
+
+def _raise_unpickle_type_error():
+    raise TypeError("Cannot unpickle freethreading primitives on threading backend")
+
+
+def _validate_picklability(**kwargs):
+    """Validate that all arguments are picklable for multiprocessing compatibility."""
+    spawning_popen = get_spawning_popen()
+    set_spawning_popen(_DummyPopen)
+    try:
+        dump(tuple(kwargs.values()), io.BytesIO())
+    except (AttributeError, TypeError, pickle.PicklingError) as e:
+        raise ValueError(
+            f"{list(kwargs.keys())} must be picklable for compatibility with "
+            f"multiprocessing backend. Error: {e}. "
+            f"Use module-level functions instead of lambdas or nested functions."
+        ) from e
+    finally:
+        set_spawning_popen(spawning_popen)
 
 
 def active_children() -> list[Thread] | list[BaseProcess]:
