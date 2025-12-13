@@ -62,20 +62,23 @@ from typing import Literal
 _backend: Literal["threading", "multiprocessing"]
 if sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True:
     from concurrent.futures import ProcessPoolExecutor as _WorkerPoolExecutor
-    from multiprocessing import Barrier as _Barrier
-    from multiprocessing import BoundedSemaphore as _BoundedSemaphore
-    from multiprocessing import Condition as _Condition
-    from multiprocessing import Event as _Event
-    from multiprocessing import JoinableQueue as _Queue
-    from multiprocessing import Lock as _Lock
-    from multiprocessing import Process as _Worker
-    from multiprocessing import RLock as _RLock
-    from multiprocessing import Semaphore as _Semaphore
-    from multiprocessing import SimpleQueue as _SimpleQueue
     from multiprocessing import active_children as _active_children
     from multiprocessing import current_process as _current_worker
+    from multiprocessing import get_context, get_start_method
     from multiprocessing.pool import Pool as _WorkerPool
     from os import getpid as _get_ident
+
+    _ctx = get_context("forkserver") if get_start_method() == "fork" else get_context()
+    _Barrier = _ctx.Barrier
+    _BoundedSemaphore = _ctx.BoundedSemaphore
+    _Condition = _ctx.Condition
+    _Event = _ctx.Event
+    _Queue = _ctx.JoinableQueue
+    _Lock = _ctx.Lock
+    _Worker = _ctx.Process
+    _RLock = _ctx.RLock
+    _Semaphore = _ctx.Semaphore
+    _SimpleQueue = _ctx.SimpleQueue
 
     def _active_count():
         return len(_enumerate())

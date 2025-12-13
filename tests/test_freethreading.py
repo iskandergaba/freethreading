@@ -84,9 +84,9 @@ def test_worker_with_args(backend):
 
         assert isinstance(worker._worker, threading.Thread)
     else:
-        import multiprocessing
+        from multiprocessing.process import BaseProcess
 
-        assert isinstance(worker._worker, multiprocessing.Process)
+        assert isinstance(worker._worker, BaseProcess)
 
 
 def test_worker_with_kwargs(backend):
@@ -99,9 +99,9 @@ def test_worker_with_kwargs(backend):
 
         assert isinstance(worker._worker, threading.Thread)
     else:
-        import multiprocessing
+        from multiprocessing.process import BaseProcess
 
-        assert isinstance(worker._worker, multiprocessing.Process)
+        assert isinstance(worker._worker, BaseProcess)
 
 
 def test_worker_name_property(backend):
