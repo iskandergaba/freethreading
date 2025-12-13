@@ -119,7 +119,7 @@ else:
 def _validate_picklability(**kwargs):
     """Validate that all arguments are picklable for multiprocessing compatibility."""
     spawning_popen = get_spawning_popen()
-    set_spawning_popen(_MockPopen)
+    set_spawning_popen(_DummyPopen)
     try:
         dump(tuple(kwargs.values()), io.BytesIO())
     except (AttributeError, TypeError, pickle.PicklingError) as e:
@@ -136,8 +136,8 @@ def _raise_unpickle_type_error():
     raise TypeError("Cannot unpickle freethreading primitives on threading backend")
 
 
-class _MockPopen:
-    """Mock Popen for picklability validation with ForkingPickler."""
+class _DummyPopen:
+    """Dummy Popen for picklability validation with ForkingPickler."""
 
     @staticmethod
     def duplicate_for_child(fd):
