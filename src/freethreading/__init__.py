@@ -139,8 +139,6 @@ def _raise_unpickle_type_error():
 class _MockPopen:
     """Mock Popen for picklability validation with ForkingPickler."""
 
-    sentinel = None
-
     @staticmethod
     def duplicate_for_child(fd):
         return fd
